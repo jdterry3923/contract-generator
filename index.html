@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3923 Management Contract Generator</title>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0A1F38 0%, #1a3a5c 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0A1F38 0%, #1a3a5c 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .step-title {
+      font-size: 24px;
+      color: #0A1F38;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+
+    .contract-types {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .contract-card {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 25px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .contract-card:hover {
+      border-color: #F9A61A;
+      box-shadow: 0 4px 12px rgba(249, 166, 26, 0.2);
+    }
+
+    .contract-card.selected {
+      border-color: #F9A61A;
+      background: #fffbf3;
+      box-shadow: 0 4px 12px rgba(249, 166, 26, 0.3);
+    }
+
+    .contract-card h3 {
+      color: #0A1F38;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .contract-card p {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #0A1F38;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus,
+    input[type="date"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #F9A61A;
+      box-shadow: 0 0 0 3px rgba(249, 166, 26, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .checkbox-group,
+    .radio-group {
+      display: grid;
+      gap: 12px;
+    }
+
+    .checkbox-item,
+    .radio-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .checkbox-item label,
+    .radio-item label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: 400;
+    }
+
+    .hotel-select {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .hotel-option {
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .hotel-option:hover {
+      border-color: #F9A61A;
+      background: #fffbf3;
+    }
+
+    .hotel-option input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    .hotel-option.selected {
+      border-color: #F9A61A;
+      background: #fffbf3;
+    }
+
+    .room-block-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      font-size: 13px;
+    }
+
+    .room-block-table th,
+    .room-block-table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    .room-block-table th {
+      background: #0A1F38;
+      color: white;
+      font-weight: 600;
+    }
+
+    .room-block-table input {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      border: 1px solid #ddd;
+    }
+
+    .summary-table th,
+    .summary-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    .summary-table th {
+      background: #0A1F38;
+      color: white;
+      font-weight: 600;
+    }
+
+    .summary-table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 40px;
+      justify-content: space-between;
+    }
+
+    button {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #F9A61A;
+      color: #0A1F38;
+    }
+
+    .btn-primary:hover {
+      background: #e89500;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(249, 166, 26, 0.3);
+    }
+
+    .btn-secondary {
+      background: #ddd;
+      color: #0A1F38;
+    }
+
+    .btn-secondary:hover {
+      background: #ccc;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #229954;
+    }
+
+    .review-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border-left: 4px solid #F9A61A;
+    }
+
+    .review-section h3 {
+      color: #0A1F38;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .review-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .review-item:last-child {
+      border-bottom: none;
+    }
+
+    .review-label {
+      font-weight: 600;
+      color: #0A1F38;
+    }
+
+    .review-value {
+      color: #666;
+      text-align: right;
+      flex: 1;
+      margin-left: 20px;
+    }
+
+    .error {
+      background: #fee;
+      color: #c00;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border-left: 4px solid #c00;
+    }
+
+    .success {
+      background: #efe;
+      color: #060;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border-left: 4px solid #060;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>3923 Management</h1>
+      <p>Contract Generator</p>
+    </div>
+
+    <div class="content">
+      <!-- STEP 0: CONTRACT TYPE SELECTION -->
+      <div id="step0" class="step active">
+        <div class="step-title">Select Contract Type</div>
+        <div class="contract-types">
+          <div class="contract-card" onclick="selectContractType('group')">
+            <h3>Group Contract</h3>
+            <p>Paid room block arrangement for group events across one or multiple hotels</p>
+          </div>
+          <div class="contract-card" onclick="selectContractType('lnr')">
+            <h3>LNR Agreement</h3>
+            <p>Local Negotiated Rate agreement for individual rate negotiations</p>
+          </div>
+          <div class="contract-card" onclick="selectContractType('trade')">
+            <h3>In-Kind Trade</h3>
+            <p>Sponsorship lodging agreement with in-kind exchange for multiple properties</p>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+          <button class="btn-secondary" onclick="clearAllData()" style="font-size: 13px; padding: 8px 16px; color: #c00; border-color: #c00;">Clear All Data &amp; Start Fresh</button>
+        </div>
+      </div>
+
+      <!-- STEP 1: HOTELS SELECTION -->
+      <div id="step1" class="step">
+        <div class="step-title">Select Hotel(s)</div>
+        <div id="hotelSelectContainer"></div>
+        <div class="buttons">
+          <button class="btn-secondary" onclick="goToStep(0)">Back</button>
+          <button class="btn-primary" onclick="validateHotelsAndNext()">Next</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: GROUP INFO & SPONSORSHIP -->
+      <div id="step2" class="step">
+        <div class="step-title" id="step2Title">Event & Group Information</div>
+        <div id="step2Content"></div>
+        <div class="buttons">
+          <button class="btn-secondary" onclick="goToStep(1)">Back</button>
+          <button class="btn-primary" onclick="goToStep(3)">Next</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: ROOM BLOCK / ALLOCATION -->
+      <div id="step3" class="step">
+        <div class="step-title" id="step3Title">Room Block Details</div>
+        <div id="step3Content"></div>
+        <div class="buttons">
+          <button class="btn-secondary" onclick="goToStep(2)">Back</button>
+          <button class="btn-primary" onclick="goToStep(4)">Next</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: TERMS & SIGNER -->
+      <div id="step4" class="step">
+        <div class="step-title">Terms & Signer</div>
+        <div id="step4Content"></div>
+        <div class="buttons">
+          <button class="btn-secondary" onclick="goToStep(3)">Back</button>
+          <button class="btn-primary" onclick="goToStep(5)">Next</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: REVIEW & GENERATE -->
+      <div id="step5" class="step">
+        <div class="step-title">Review & Generate</div>
+        <div id="reviewContent"></div>
+        <div class="buttons">
+          <button class="btn-secondary" onclick="goToStep(4)">Back</button>
+          <button class="btn-success" onclick="generateContract()">Generate Contract</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const HOTELS = {
+      hyatt: { id: 'hyatt', name: 'Hyatt Place Amarillo West', shortName: 'Hyatt Place', entity: '8985 W Amarillo Blvd, LLC', dba: 'Hyatt Place Amarillo', address: '8985 W. Amarillo Blvd', city: 'Amarillo', state: 'TX', zip: '79124', phone: '806.310.2700', rooms: 91, roomTypes: ['Double Queen', 'King'], publishedRates: { 'Standard': 159 }, taxRate: 15, brand: 'Hyatt', checkin: '3:00 PM', checkout: '11:00 AM', cancellationHours: 24 },
+      tru: { id: 'tru', name: 'TRU by Hilton West Amarillo', shortName: 'TRU by Hilton', entity: '2202 Soncy Rd, LLC', dba: 'TRU by Hilton', address: '2202 Soncy Rd.', city: 'Amarillo', state: 'TX', zip: '79124', phone: '806.803.7202', rooms: 90, roomTypes: ['Double Queen', 'King'], publishedRates: { 'Standard': 129 }, taxRate: 15, brand: 'Hilton', checkin: '3:00 PM', checkout: '11:00 AM', cancellationHours: 48 },
+      myplace_ama: { id: 'myplace_ama', name: 'My Place Amarillo West', shortName: 'My Place Amarillo', entity: '2208 Cinema Drive, LLC', dba: 'My Place Hotel — Amarillo West', address: '2208 Cinema Drive', city: 'Amarillo', state: 'TX', zip: '79124', phone: '806.803.9501', rooms: 63, roomTypes: ['Queen (1 Bed)', 'Queen (2 Beds)'], publishedRates: { 'Standard': 119 }, taxRate: 15, brand: 'My Place', checkin: '3:00 PM', checkout: '11:00 AM', cancellationHours: 48 },
+      myplace_lbb: { id: 'myplace_lbb', name: 'My Place Lubbock', shortName: 'My Place Lubbock', entity: 'My Place Lubbock, LLC', dba: 'My Place Lubbock', address: '5310 W. Loop 289', city: 'Lubbock', state: 'TX', zip: '79414', phone: '806.701.4196', rooms: 63, roomTypes: ['Queen (1 Bed)', 'Queen (2 Beds)'], publishedRates: { 'Standard': 119 }, taxRate: 15, brand: 'My Place', checkin: '3:00 PM', checkout: '11:00 AM', cancellationHours: 48 },
+      home2: { id: 'home2', name: 'Home2 Suites by Hilton Amarillo West', shortName: 'Home2 Suites', entity: '8251 LLC', dba: 'Home2 Suites by Hilton Amarillo West', address: '8251 West Amarillo Blvd.', city: 'Amarillo', state: 'TX', zip: '79124', phone: '806.803.7777', rooms: 92, roomTypes: ['Double Queen', 'King'], publishedRates: { 'Standard': 149 }, taxRate: 15, brand: 'Hilton', checkin: '3:00 PM', checkout: '11:00 AM', cancellationHours: 24 },
+      courtyard: { id: 'courtyard', name: 'Courtyard by Marriott Downtown Amarillo', shortName: 'Courtyard by Marriott', entity: 'Courtyard Downtown Amarillo, LLC', dba: 'Courtyard by Marriott Downtown Amarillo', address: '724 S. Polk St.', city: 'Amarillo', state: 'TX', zip: '79101', phone: '806.553.4500', rooms: 107, roomTypes: ['Double Queen', 'King'], publishedRates: { 'Standard': 139 }, taxRate: 15, brand: 'Marriott', checkin: '3:00 PM', checkout: '11:00 AM', cancellationHours: 48 },
+    };
+
+    const HOTEL_SIGNERS = {
+      mark: { name: 'Mark Johnson', title: 'Area Director of Sales', phone: '(806) 420-8950', email: 'mark@3923mgmt.com' },
+      emily: { name: 'Emily Harris', title: 'Sales Manager', phone: '(806) 420-8950', email: 'emily@3923mgmt.com' },
+    };
+
+    const MGMT_ENTITY = 'Thirty-Nine 23 Management, LLC';
+    const MGMT_ADDRESS = '301 S. Polk, Suite 101, Amarillo TX 79101';
+
+    let state = {
+      contractType: null,
+      selectedHotels: [],
+      eventName: '',
+      eventDescription: '',
+      companyName: '',
+      contactName: '',
+      contactTitle: '',
+      contactPhone: '',
+      contactEmail: '',
+      contactAddress: '',
+      contactCity: '',
+      contactState: '',
+      contactZip: '',
+      seasonStartDate: '',
+      seasonEndDate: '',
+      roomBlockData: {},
+      paymentTerms: '',
+      paymentResponsibility: 'group',
+      attritionPercentage: null,
+      attritionDays: null,
+      concessions: [],
+      cancellationDays: 30,
+      sponsorshipValue: 0,
+      hotelSigner: 'mark',
+      tradeAllocation: [],
+      negotiatedRate: '',
+      needsBookingLink: false,
+      bookingLinkUrl: '',
+      cutoffDate: '',
+      paymentTermOption: '',
+      taxExempt: false,
+      lnrPaymentType: 'individual',
+      lnrTargetNights: '',
+      autoFillRooms: '',
+    };
+
+    function selectContractType(type) {
+      state.contractType = type;
+      document.querySelectorAll('.contract-card').forEach(card => card.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      renderStep1();
+      goToStep(1);
+    }
+
+    function renderStep1() {
+      const container = document.getElementById('hotelSelectContainer');
+      container.innerHTML = '<div class="hotel-select">';
+      Object.values(HOTELS).forEach(hotel => {
+        const isSelected = state.selectedHotels.includes(hotel.id);
+        container.innerHTML += `
+          <div class="hotel-option ${isSelected ? 'selected' : ''}" onclick="toggleHotel('${hotel.id}', this)">
+            <input type="checkbox" ${isSelected ? 'checked' : ''}>
+            <div>
+              <strong>${hotel.name}</strong>
+              <div style="font-size: 12px; color: #666;">${hotel.address}, ${hotel.city} TX ${hotel.zip}</div>
+              <div style="font-size: 12px; color: #666;">${hotel.phone}</div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML += '</div>';
+    }
+
+    function toggleHotel(hotelId, element) {
+      const index = state.selectedHotels.indexOf(hotelId);
+      if (index > -1) {
+        state.selectedHotels.splice(index, 1);
+        element.classList.remove('selected');
+        element.querySelector('input[type="checkbox"]').checked = false;
+      } else {
+        state.selectedHotels.push(hotelId);
+        element.classList.add('selected');
+        element.querySelector('input[type="checkbox"]').checked = true;
+      }
+    }
+
+    function validateHotelsAndNext() {
+      if (state.selectedHotels.length === 0) {
+        alert('Please select at least one hotel');
+        return;
+      }
+      goToStep(2);
+    }
+
+    function goToStep(stepNum) {
+      saveFormData();
+      document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+      document.getElementById(`step${stepNum}`).classList.add('active');
+
+      if (stepNum === 2) renderStep2();
+      if (stepNum === 3) renderStep3();
+      if (stepNum === 4) renderStep4();
+      if (stepNum === 5) renderStep5();
+
+      window.scrollTo(0, 0);
+    }
+
+    function saveFormData() {
+      state.eventName = document.getElementById('eventName')?.value || '';
+      state.eventDescription = document.getElementById('eventDescription')?.value || '';
+      state.companyName = document.getElementById('companyName')?.value || '';
+      state.contactName = document.getElementById('contactName')?.value || '';
+      state.contactTitle = document.getElementById('contactTitle')?.value || '';
+      state.contactPhone = document.getElementById('contactPhone')?.value || '';
+      state.contactEmail = document.getElementById('contactEmail')?.value || '';
+      state.contactAddress = document.getElementById('contactAddress')?.value || '';
+      state.contactCity = document.getElementById('contactCity')?.value || '';
+      state.contactState = document.getElementById('contactState')?.value || '';
+      state.contactZip = document.getElementById('contactZip')?.value || '';
+      state.sponsorshipValue = parseFloat(document.getElementById('sponsorshipValue')?.value) || 0;
+      state.seasonStartDate = document.getElementById('seasonStartDate')?.value || '';
+      state.seasonEndDate = document.getElementById('seasonEndDate')?.value || '';
+      state.paymentTerms = document.getElementById('paymentTerms')?.value || '';
+      state.paymentResponsibility = document.querySelector('input[name="paymentResponsibility"]:checked')?.value || 'group';
+      state.cancellationDays = parseInt(document.getElementById('cancellationDays')?.value) || 24;
+      state.attritionPercentage = parseFloat(document.getElementById('attritionPercentage')?.value) || null;
+      state.attritionDays = parseInt(document.getElementById('attritionDays')?.value) || null;
+      state.hotelSigner = document.querySelector('input[name="hotelSigner"]:checked')?.value || 'mark';
+      state.negotiatedRate = document.getElementById('negotiatedRate')?.value || '';
+      state.needsBookingLink = document.getElementById('needsBookingLink')?.checked || false;
+      state.bookingLinkUrl = document.getElementById('bookingLinkUrl')?.value || '';
+      state.cutoffDate = document.getElementById('cutoffDate')?.value || '';
+      state.paymentTermOption = document.getElementById('paymentTermOption')?.value || '';
+      state.taxExempt = document.getElementById('taxExempt')?.checked || false;
+      state.lnrPaymentType = document.querySelector('input[name="lnrPaymentType"]:checked')?.value || 'individual';
+      state.lnrTargetNights = document.getElementById('lnrTargetNights')?.value || '';
+
+      state.concessions = [];
+      document.querySelectorAll('input[name="concessions"]:checked').forEach(cb => {
+        state.concessions.push(cb.value);
+      });
+
+      if (state.contractType === 'group') {
+        state.roomBlockData = state.roomBlockData || {};
+        document.querySelectorAll('input[data-room-type]')?.forEach(input => {
+          const key = input.dataset.roomType + '_' + input.dataset.date;
+          state.roomBlockData[key] = parseInt(input.value) || 0;
+        });
+      }
+
+      if (state.contractType === 'trade') {
+        state.tradeAllocation = [];
+        document.querySelectorAll('tr[data-allocation-row]')?.forEach(row => {
+          const cells = row.querySelectorAll('input, select');
+          if (cells.length >= 4) {
+            state.tradeAllocation.push({
+              person: cells[0].value,
+              property: cells[1].value,
+              nights: parseInt(cells[2].value) || 0,
+              dates: cells[3].value,
+            });
+          }
+        });
+      }
+
+      persistState();
+    }
+
+    function renderStep2() {
+      const isLNR = state.contractType === 'lnr';
+      const isTrade = state.contractType === 'trade';
+      document.getElementById('step2Title').textContent = isLNR ? 'Client Information' : 'Event & Group Information';
+
+      let html = '';
+
+      // Event Name & Description — not for LNR
+      if (!isLNR) {
+        html += '<div class="form-group"><label for="eventName">Event Name *</label>';
+        html += '<input type="text" id="eventName" value="' + escHtml(state.eventName) + '" placeholder="e.g., Annual Sales Conference 2026"></div>';
+        html += '<div class="form-group"><label for="eventDescription">Event Description</label>';
+        html += '<input type="text" id="eventDescription" value="' + escHtml(state.eventDescription) + '" placeholder="e.g., 3-day corporate retreat"></div>';
+      }
+
+      html += '<div class="form-group"><label for="companyName">' + (isLNR ? 'Company Name *' : 'Company/Group Name *') + '</label>';
+      html += '<input type="text" id="companyName" value="' + escHtml(state.companyName) + '" placeholder="e.g., Acme Corporation"></div>';
+
+      html += '<div class="form-group"><label for="contactName">Primary Contact Name *</label>';
+      html += '<input type="text" id="contactName" value="' + escHtml(state.contactName) + '" placeholder="e.g., John Smith"></div>';
+
+      html += '<div class="form-group"><label for="contactTitle">Contact Title</label>';
+      html += '<input type="text" id="contactTitle" value="' + escHtml(state.contactTitle) + '" placeholder="e.g., Director of Events"></div>';
+
+      html += '<div class="form-row">';
+      html += '<div class="form-group"><label for="contactPhone">Contact Phone *</label>';
+      html += '<input type="tel" id="contactPhone" value="' + escHtml(state.contactPhone) + '" placeholder="(806) 555-0000"></div>';
+      html += '<div class="form-group"><label for="contactEmail">Contact Email *</label>';
+      html += '<input type="email" id="contactEmail" value="' + escHtml(state.contactEmail) + '" placeholder="john@company.com"></div>';
+      html += '</div>';
+
+      html += '<div class="form-row">';
+      html += '<div class="form-group"><label for="contactAddress">Contact Address *</label>';
+      html += '<input type="text" id="contactAddress" value="' + escHtml(state.contactAddress) + '" placeholder="123 Main Street"></div>';
+      html += '<div class="form-group"><label for="contactCity">City *</label>';
+      html += '<input type="text" id="contactCity" value="' + escHtml(state.contactCity) + '" placeholder="Amarillo"></div>';
+      html += '</div>';
+
+      html += '<div class="form-row">';
+      html += '<div class="form-group"><label for="contactState">State *</label>';
+      html += '<input type="text" id="contactState" value="' + escHtml(state.contactState) + '" placeholder="TX"></div>';
+      html += '<div class="form-group"><label for="contactZip">ZIP Code *</label>';
+      html += '<input type="text" id="contactZip" value="' + escHtml(state.contactZip) + '" placeholder="79101"></div>';
+      html += '</div>';
+
+      if (isTrade) {
+        html += '<div class="form-group"><label for="sponsorshipValue">Sponsorship Value *</label>';
+        html += '<input type="number" id="sponsorshipValue" value="' + (state.sponsorshipValue || '') + '" placeholder="50000" step="0.01"></div>';
+      }
+
+      document.getElementById('step2Content').innerHTML = html;
+    }
+
+    function escHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderStep3() {
+      const container = document.getElementById('step3Content');
+      if (state.contractType === 'trade') {
+        document.getElementById('step3Title').textContent = 'Room Night Allocation';
+        renderTradeAllocation(container);
+      } else if (state.contractType === 'lnr') {
+        document.getElementById('step3Title').textContent = 'Agreement Details';
+        renderLNRDetails(container);
+      } else {
+        document.getElementById('step3Title').textContent = 'Room Block Details';
+        renderRoomBlock(container);
+      }
+    }
+
+    function renderLNRDetails(container) {
+      let html = '<div class="form-group"><label for="lnrTargetNights">Target Annual Room Nights *</label>';
+      html += '<input type="number" id="lnrTargetNights" min="0" value="' + (state.lnrTargetNights || '') + '" placeholder="e.g., 500">';
+      html += '<p style="font-size: 12px; color: #666; margin-top: 4px;">Total room nights expected per year. Production will be evaluated quarterly.</p></div>';
+      container.innerHTML = html;
+    }
+
+    function renderRoomBlock(container) {
+      const hotelIds = state.selectedHotels;
+
+      let html = '';
+
+      // Stay dates are set in Step 4, but we need them here for the room grid
+      // If not yet set, prompt user
+      if (!state.seasonStartDate || !state.seasonEndDate) {
+        html += '<div style="padding: 20px; background: #FFF8E1; border-radius: 6px; border: 1px solid #FFE082; margin-bottom: 20px;">';
+        html += '<p style="margin: 0; color: #F57F17;"><strong>Note:</strong> You can set stay dates and enter rooms per night here, or use the auto-fill option below for long stays.</p></div>';
+      }
+
+      html += '<div class="form-group"><label>Stay Dates *</label><div class="form-row">';
+      html += '<div><label style="margin-bottom: 8px;">Check-In Date *</label><input type="date" id="seasonStartDate" value="' + state.seasonStartDate + '" onchange="saveFormData(); renderStep3();"></div>';
+      html += '<div><label style="margin-bottom: 8px;">Check-Out Date *</label><input type="date" id="seasonEndDate" value="' + state.seasonEndDate + '" onchange="saveFormData(); renderStep3();"></div>';
+      html += '</div></div>';
+
+      const dates = state.seasonStartDate && state.seasonEndDate ?
+        generateDateRange(new Date(state.seasonStartDate), new Date(state.seasonEndDate)) : [];
+      const numDays = dates.length;
+
+      // Auto-fill option for long stays (>7 days)
+      if (numDays > 7) {
+        html += '<div style="padding: 16px; background: #E3F2FD; border-radius: 6px; border: 1px solid #90CAF9; margin-bottom: 20px;">';
+        html += '<div class="form-group" style="margin-bottom: 10px;"><label style="color: #1565C0; font-weight: 600;">Auto-Fill Rooms (' + numDays + ' nights)</label></div>';
+        html += '<p style="font-size: 12px; color: #1565C0; margin-bottom: 12px;">Enter the number of rooms per night to fill across all ' + numDays + ' nights automatically.</p>';
+        html += '<div class="form-row">';
+        hotelIds.forEach(hotelId => {
+          const hotel = HOTELS[hotelId];
+          hotel.roomTypes.forEach(roomType => {
+            const autoKey = hotelId + '_' + roomType;
+            html += '<div style="flex: 1; min-width: 150px;"><label style="margin-bottom: 4px; font-size: 12px;">' + hotel.shortName + ' — ' + roomType + '</label>';
+            html += '<input type="number" min="0" class="auto-fill-input" data-hotel="' + hotelId + '" data-room-type="' + roomType + '" placeholder="Rooms/night" value="' + (state.autoFillData?.[autoKey] || '') + '"></div>';
+          });
+        });
+        html += '</div>';
+        html += '<button type="button" class="btn-primary" style="margin-top: 12px; padding: 8px 20px; font-size: 13px;" onclick="applyAutoFill()">Apply Auto-Fill</button>';
+        html += '</div>';
+      }
+
+      // For short stays (<=7 days), show the day-by-day grid
+      if (numDays > 0 && numDays <= 7) {
+        html += '<table class="room-block-table"><thead><tr><th>Room Type / Hotel</th>';
+        dates.forEach(date => {
+          const d = new Date(date + 'T00:00:00');
+          html += '<th>' + (d.getMonth() + 1) + '/' + d.getDate() + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+        hotelIds.forEach(hotelId => {
+          const hotel = HOTELS[hotelId];
+          html += '<tr style="background: #f0f0f0;"><td colspan="' + (numDays + 1) + '"><strong>' + hotel.name + '</strong></td></tr>';
+          hotel.roomTypes.forEach(roomType => {
+            html += '<tr><td>' + roomType + '</td>';
+            dates.forEach(date => {
+              const key = roomType + '_' + date;
+              const val = state.roomBlockData[key] || '';
+              html += '<td><input type="number" min="0" data-room-type="' + roomType + '" data-date="' + date + '" value="' + val + '" style="width: 50px;"></td>';
+            });
+            html += '</tr>';
+          });
+        });
+        html += '</tbody></table>';
+      } else if (numDays > 7) {
+        // For long stays, show summary after auto-fill
+        let totalNights = 0;
+        Object.values(state.roomBlockData).forEach(v => totalNights += (v || 0));
+        if (totalNights > 0) {
+          html += '<div style="margin-top: 10px; padding: 12px; background: #E8F5E9; border-radius: 6px; border: 1px solid #A5D6A7;">';
+          html += '<strong style="color: #2E7D32;">Room Block Summary</strong>';
+          html += '<table class="room-block-table" style="margin-top: 8px;"><thead><tr><th>Property</th><th>Room Type</th><th>Rooms/Night</th><th>Total Nights</th></tr></thead><tbody>';
+          hotelIds.forEach(hotelId => {
+            const hotel = HOTELS[hotelId];
+            hotel.roomTypes.forEach(roomType => {
+              const key = roomType + '_' + dates[0];
+              const perNight = state.roomBlockData[key] || 0;
+              if (perNight > 0) {
+                html += '<tr><td>' + hotel.shortName + '</td><td>' + roomType + '</td><td>' + perNight + '</td><td>' + (perNight * numDays) + '</td></tr>';
+              }
+            });
+          });
+          html += '<tr style="font-weight: bold;"><td colspan="3">Total</td><td>' + totalNights + '</td></tr>';
+          html += '</tbody></table></div>';
+        }
+      }
+
+      container.innerHTML = html;
+    }
+
+    function applyAutoFill() {
+      saveFormData();
+      const dates = generateDateRange(new Date(state.seasonStartDate), new Date(state.seasonEndDate));
+      state.autoFillData = state.autoFillData || {};
+      document.querySelectorAll('.auto-fill-input').forEach(input => {
+        const hotelId = input.dataset.hotel;
+        const roomType = input.dataset.roomType;
+        const count = parseInt(input.value) || 0;
+        state.autoFillData[hotelId + '_' + roomType] = count;
+        dates.forEach(date => {
+          const key = roomType + '_' + date;
+          state.roomBlockData[key] = count;
+        });
+      });
+      renderStep3();
+    }
+
+    function renderTradeAllocation(container) {
+      let html = '<div class="form-group"><label>Room Night Allocation *</label>';
+      html += '<p style="font-size: 12px; color: #666; margin-bottom: 15px;">Enter guest names, assigned properties, number of nights, and approximate dates.</p>';
+      html += '<table class="room-block-table"><thead><tr><th>Guest/Person</th><th>Property</th><th>Nights</th><th>Approximate Dates</th></tr></thead><tbody>';
+
+      if (state.tradeAllocation.length > 0) {
+        state.tradeAllocation.forEach((alloc, idx) => {
+          html += '<tr data-allocation-row="' + idx + '">';
+          html += '<td><input type="text" value="' + alloc.person + '" placeholder="Guest name"></td>';
+          html += '<td><select><option value="">Select property</option>';
+          state.selectedHotels.forEach(hid => {
+            const hotel = HOTELS[hid];
+            html += '<option value="' + hotel.name + '" ' + (alloc.property === hotel.name ? 'selected' : '') + '>' + hotel.shortName + '</option>';
+          });
+          html += '</select></td>';
+          html += '<td><input type="number" min="0" value="' + alloc.nights + '" placeholder="0"></td>';
+          html += '<td><input type="text" value="' + alloc.dates + '" placeholder="e.g., June 10-12"></td>';
+          html += '</tr>';
+        });
+      }
+
+      for (let i = state.tradeAllocation.length; i < 5; i++) {
+        html += '<tr data-allocation-row="' + i + '">';
+        html += '<td><input type="text" placeholder="Guest name"></td>';
+        html += '<td><select><option value="">Select property</option>';
+        state.selectedHotels.forEach(hid => {
+          const hotel = HOTELS[hid];
+          html += '<option value="' + hotel.name + '">' + hotel.shortName + '</option>';
+        });
+        html += '</select></td>';
+        html += '<td><input type="number" min="0" placeholder="0"></td>';
+        html += '<td><input type="text" placeholder="e.g., June 10-12"></td>';
+        html += '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }
+
+    function renderStep4() {
+      const container = document.getElementById('step4Content');
+      let html = '';
+
+      // Rate field for Group and LNR
+      if (state.contractType === 'group' || state.contractType === 'lnr') {
+        html += '<div class="form-group"><label for="negotiatedRate">Negotiated Rate (per room per night) *</label>';
+        html += '<input type="number" id="negotiatedRate" min="0" step="0.01" value="' + (state.negotiatedRate || '') + '" placeholder="e.g., 99.00"></div>';
+      }
+
+      // Payment responsibility for group
+      if (state.contractType === 'group') {
+        html += '<div class="form-group"><label>Payment Responsibility *</label><div class="radio-group">';
+        html += '<div class="radio-item"><input type="radio" name="paymentResponsibility" value="group" ' + (state.paymentResponsibility === 'group' ? 'checked' : '') + '><label>Group pays (master account)</label></div>';
+        html += '<div class="radio-item"><input type="radio" name="paymentResponsibility" value="individual" ' + (state.paymentResponsibility === 'individual' ? 'checked' : '') + '><label>Individuals pay at checkout</label></div>';
+        html += '</div></div>';
+
+        // Payment term options
+        html += '<div id="paymentTermGroup" class="form-group">';
+        html += '<label for="paymentTermOption">Payment Terms *</label>';
+        html += '<select id="paymentTermOption">';
+        html += '<option value="">Select payment terms...</option>';
+        html += '<option value="prepaid" ' + (state.paymentTermOption === 'prepaid' ? 'selected' : '') + '>Pre-paid in full prior to arrival</option>';
+        html += '<option value="due_on_arrival" ' + (state.paymentTermOption === 'due_on_arrival' ? 'selected' : '') + '>Payment due on arrival</option>';
+        html += '<option value="due_30" ' + (state.paymentTermOption === 'due_30' ? 'selected' : '') + '>Payment due 30 days prior to arrival</option>';
+        html += '<option value="50_30_50_arrival" ' + (state.paymentTermOption === '50_30_50_arrival' ? 'selected' : '') + '>50% due 30 days prior, 50% due on arrival</option>';
+        html += '<option value="50_60_50_30" ' + (state.paymentTermOption === '50_60_50_30' ? 'selected' : '') + '>50% due 60 days prior, 50% due 30 days prior</option>';
+        html += '<option value="direct_bill" ' + (state.paymentTermOption === 'direct_bill' ? 'selected' : '') + '>Direct bill (net 30 after departure)</option>';
+        html += '<option value="custom" ' + (state.paymentTermOption === 'custom' ? 'selected' : '') + '>Custom (specify below)</option>';
+        html += '</select></div>';
+      }
+
+      // Payment type for LNR
+      if (state.contractType === 'lnr') {
+        html += '<div class="form-group"><label>Payment Type *</label><div class="radio-group">';
+        html += '<div class="radio-item"><input type="radio" name="lnrPaymentType" value="individual" ' + (state.lnrPaymentType === 'individual' ? 'checked' : '') + '><label>Individual pay at checkout</label></div>';
+        html += '<div class="radio-item"><input type="radio" name="lnrPaymentType" value="direct_bill" ' + (state.lnrPaymentType === 'direct_bill' ? 'checked' : '') + '><label>Direct bill (net 30 after departure)</label></div>';
+        html += '</div></div>';
+      }
+
+      if (state.contractType !== 'lnr') {
+        html += '<div class="form-group"><label for="paymentTerms">Additional Payment Notes</label><textarea id="paymentTerms" rows="3" placeholder="Any additional payment details or custom terms...">' + state.paymentTerms + '</textarea></div>';
+      }
+
+      // Cut-off date for group
+      if (state.contractType === 'group') {
+        html += '<div class="form-group"><label for="cutoffDate">Cut-Off Date</label>';
+        html += '<input type="date" id="cutoffDate" value="' + state.cutoffDate + '">';
+        html += '<p style="font-size: 12px; color: #666; margin-top: 4px;">Default: 30 days prior to check-in. Leave blank to use default.</p></div>';
+      }
+
+      if (state.contractType === 'group') {
+        html += '<div class="form-group"><label>Attrition Clause (optional)</label>';
+        html += '<div class="form-row">';
+        html += '<div><label style="margin-bottom: 8px;">Attrition %</label><input type="number" id="attritionPercentage" min="0" max="100" step="0.1" value="' + (state.attritionPercentage || '') + '" placeholder="e.g., 10"></div>';
+        html += '<div><label style="margin-bottom: 8px;">Days Notice</label><input type="number" id="attritionDays" min="0" value="' + (state.attritionDays || '') + '" placeholder="e.g., 30"></div>';
+        html += '</div></div>';
+      }
+
+      // Tax exempt option for Group and LNR
+      if (state.contractType === 'group' || state.contractType === 'lnr') {
+        html += '<div class="form-group"><div class="checkbox-item"><input type="checkbox" id="taxExempt" ' + (state.taxExempt ? 'checked' : '') + '><label>Tax Exempt (government, schools, etc.)</label></div>';
+        html += '<p style="font-size: 12px; color: #666; margin-top: 4px;">Check if the group/company holds a valid tax exemption certificate.</p></div>';
+      }
+
+      html += '<div class="form-group"><label>Concessions & Amenities</label><div class="checkbox-group">';
+      ['Free Parking', 'Free Wi-Fi', 'Breakfast Included', 'Late Checkout', 'Early Check-in', 'Comp Room(s)', 'Meeting Space', 'Welcome Amenity'].forEach(conc => {
+        const isChecked = state.concessions.includes(conc);
+        html += '<div class="checkbox-item"><input type="checkbox" name="concessions" value="' + conc + '" ' + (isChecked ? 'checked' : '') + '><label>' + conc + '</label></div>';
+      });
+      html += '</div></div>';
+
+      // Booking link option for Group and LNR
+      if (state.contractType === 'group' || state.contractType === 'lnr') {
+        html += '<div class="form-group"><div class="checkbox-item"><input type="checkbox" id="needsBookingLink" ' + (state.needsBookingLink ? 'checked' : '') + ' onchange="document.getElementById(\'bookingLinkGroup\').style.display = this.checked ? \'block\' : \'none\'"><label>Include Booking Link</label></div></div>';
+        html += '<div id="bookingLinkGroup" class="form-group" style="display: ' + (state.needsBookingLink ? 'block' : 'none') + ';">';
+        html += '<label for="bookingLinkUrl">Booking Link URL (leave blank if not yet available)</label>';
+        html += '<input type="text" id="bookingLinkUrl" value="' + state.bookingLinkUrl + '" placeholder="e.g., https://www.hyatt.com/group-booking/...">';
+        html += '</div>';
+      }
+
+      html += '<div class="form-group"><label>Hotel Signer *</label><div class="radio-group">';
+      Object.entries(HOTEL_SIGNERS).forEach(([key, signer]) => {
+        html += '<div class="radio-item"><input type="radio" name="hotelSigner" value="' + key + '" ' + (state.hotelSigner === key ? 'checked' : '') + '><label>' + signer.name + ', ' + signer.title + '</label></div>';
+      });
+      html += '</div></div>';
+
+      container.innerHTML = html;
+    }
+
+    function renderStep5() {
+      const container = document.getElementById('reviewContent');
+      let html = '';
+
+      html += '<div class="review-section">';
+      html += '<h3>Contract Information</h3>';
+      html += '<div class="review-item"><span class="review-label">Contract Type:</span><span class="review-value">' +
+        (state.contractType === 'group' ? 'Group Contract' : state.contractType === 'lnr' ? 'LNR Agreement' : 'In-Kind Trade') + '</span></div>';
+      if (state.contractType !== 'lnr') {
+        html += '<div class="review-item"><span class="review-label">Event:</span><span class="review-value">' + state.eventName + '</span></div>';
+        if (state.eventDescription) {
+          html += '<div class="review-item"><span class="review-label">Description:</span><span class="review-value">' + state.eventDescription + '</span></div>';
+        }
+      }
+      html += '</div>';
+
+      html += '<div class="review-section">';
+      html += '<h3>' + (state.contractType === 'lnr' ? 'Client Information' : 'Group Information') + '</h3>';
+      html += '<div class="review-item"><span class="review-label">Company:</span><span class="review-value">' + state.companyName + '</span></div>';
+      html += '<div class="review-item"><span class="review-label">Contact:</span><span class="review-value">' + state.contactName + '</span></div>';
+      html += '<div class="review-item"><span class="review-label">Phone:</span><span class="review-value">' + formatPhone(state.contactPhone) + '</span></div>';
+      html += '<div class="review-item"><span class="review-label">Email:</span><span class="review-value">' + state.contactEmail + '</span></div>';
+      if (state.contractType === 'lnr') {
+        html += '<div class="review-item"><span class="review-label">Payment:</span><span class="review-value">' + (state.lnrPaymentType === 'direct_bill' ? 'Direct Bill' : 'Individual Pay') + '</span></div>';
+        if (state.lnrTargetNights) {
+          html += '<div class="review-item"><span class="review-label">Target Annual Nights:</span><span class="review-value">' + state.lnrTargetNights + '</span></div>';
+        }
+        if (state.taxExempt) {
+          html += '<div class="review-item"><span class="review-label">Tax Exempt:</span><span class="review-value">Yes</span></div>';
+        }
+      }
+      html += '</div>';
+
+      html += '<div class="review-section">';
+      html += '<h3>Selected Hotels</h3>';
+      state.selectedHotels.forEach(hid => {
+        html += '<div class="review-item"><span class="review-value">' + HOTELS[hid].name + '</span></div>';
+      });
+      html += '</div>';
+
+      if (state.seasonStartDate && state.seasonEndDate) {
+        html += '<div class="review-section">';
+        html += '<h3>Season</h3>';
+        html += '<div class="review-item"><span class="review-label">Dates:</span><span class="review-value">' +
+          formatDate(state.seasonStartDate) + ' — ' + formatDate(state.seasonEndDate) + '</span></div>';
+        html += '</div>';
+      }
+
+      if (state.contractType === 'trade' && state.sponsorshipValue) {
+        html += '<div class="review-section">';
+        html += '<h3>Sponsorship</h3>';
+        html += '<div class="review-item"><span class="review-label">Value:</span><span class="review-value">$' + state.sponsorshipValue.toFixed(2) + '</span></div>';
+        html += '</div>';
+      }
+
+      if ((state.contractType === 'group' || state.contractType === 'lnr') && state.negotiatedRate) {
+        html += '<div class="review-section">';
+        html += '<h3>Rate</h3>';
+        html += '<div class="review-item"><span class="review-label">Negotiated Rate:</span><span class="review-value">$' + parseFloat(state.negotiatedRate).toFixed(2) + ' per room per night</span></div>';
+        html += '</div>';
+      }
+
+      if (state.contractType === 'group') {
+        html += '<div class="review-section">';
+        html += '<h3>Payment & Terms</h3>';
+        html += '<div class="review-item"><span class="review-label">Payment:</span><span class="review-value">' + (state.paymentResponsibility === 'individual' ? 'Individual Pay (Courtesy Block)' : 'Group Pay') + '</span></div>';
+        if (state.taxExempt) {
+          html += '<div class="review-item"><span class="review-label">Tax Exempt:</span><span class="review-value">Yes</span></div>';
+        }
+        html += '</div>';
+      }
+
+      if (state.needsBookingLink) {
+        html += '<div class="review-section">';
+        html += '<h3>Booking Link</h3>';
+        html += '<div class="review-item"><span class="review-label">URL:</span><span class="review-value">' + (state.bookingLinkUrl || '[To be provided]') + '</span></div>';
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function generateDateRange(startDate, endDate) {
+      const dates = [];
+      const current = new Date(startDate);
+      while (current <= endDate) {
+        dates.push(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+      return dates;
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function generateContract() {
+      saveFormData();
+
+      const needsEventName = state.contractType !== 'lnr';
+      if ((needsEventName && !state.eventName) || !state.companyName || !state.contactName || !state.contactPhone || !state.contactEmail) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      if (state.contractType === 'group') {
+        generateGroupContract();
+      } else if (state.contractType === 'lnr') {
+        generateLNRContract();
+      } else if (state.contractType === 'trade') {
+        generateTradeContract();
+      }
+    }
+
+    // Helper functions for document generation
+    function makeP(text, opts = {}) {
+      const { Paragraph, TextRun } = docx;
+      const runOpts = { text: text, font: opts.font || 'Calibri' };
+      if (opts.bold) runOpts.bold = true;
+      if (opts.size) runOpts.size = opts.size;
+      if (opts.color) runOpts.color = opts.color;
+
+      const pOpts = { children: [new TextRun(runOpts)] };
+      if (opts.alignment) pOpts.alignment = opts.alignment;
+      if (opts.spacing) pOpts.spacing = opts.spacing;
+      return new Paragraph(pOpts);
+    }
+
+    function makeHeader(text) {
+      return makeP(text, { bold: true, size: 28, color: '0A1F38', spacing: { before: 400, after: 200 } });
+    }
+
+    function makeBody(text) {
+      return makeP(text, { size: 22, spacing: { after: 200 } });
+    }
+
+    function getPaymentTermText() {
+      const options = {
+        'prepaid': 'Full payment is due prior to the Group\'s arrival date. No rooms will be released until payment has been received in full.',
+        'due_on_arrival': 'Full payment is due upon arrival. The Group\'s designated representative must provide a valid form of payment at check-in to cover the total room obligation.',
+        'due_30': 'Full payment is due no later than thirty (30) days prior to the Group\'s scheduled arrival date. Failure to remit payment by this date may result in cancellation of the room block.',
+        '50_30_50_arrival': 'A deposit of fifty percent (50%) of the total room obligation is due no later than thirty (30) days prior to the Group\'s scheduled arrival date. The remaining fifty percent (50%) is due upon arrival. Failure to remit the deposit by the specified date may result in cancellation of the room block.',
+        '50_60_50_30': 'A deposit of fifty percent (50%) of the total room obligation is due no later than sixty (60) days prior to the Group\'s scheduled arrival date. The remaining fifty percent (50%) is due no later than thirty (30) days prior to arrival. Failure to remit payment by the specified dates may result in cancellation of the room block.',
+        'direct_bill': 'Payment will be made via direct billing. The Group agrees to remit full payment within thirty (30) days following the Group\'s departure date. A valid credit application and credit card authorization form must be on file with the Hotel prior to arrival. A valid credit card will be collected from each individual guest at check-in to cover incidental charges.',
+      };
+      let text = options[state.paymentTermOption] || '';
+      if (state.paymentTerms) {
+        text += (text ? ' ' : '') + state.paymentTerms;
+      }
+      return text || 'Payment terms to be agreed upon by Hotel and Group prior to arrival.';
+    }
+
+    function getCutoffDate() {
+      if (state.cutoffDate) return formatDate(state.cutoffDate);
+      if (state.seasonStartDate) {
+        const d = new Date(state.seasonStartDate + 'T00:00:00');
+        d.setDate(d.getDate() - 30);
+        return formatDate(d.toISOString().split('T')[0]);
+      }
+      return '[To be determined]';
+    }
+
+    function formatPhone(phone) {
+      if (!phone) return '';
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length === 10) {
+        return '(' + digits.substring(0, 3) + ') ' + digits.substring(3, 6) + '-' + digits.substring(6);
+      }
+      if (digits.length === 11 && digits[0] === '1') {
+        return '(' + digits.substring(1, 4) + ') ' + digits.substring(4, 7) + '-' + digits.substring(7);
+      }
+      return phone;
+    }
+
+    function persistState() {
+      try { localStorage.setItem('3923_contract_state', JSON.stringify(state)); } catch(e) {}
+    }
+
+    function loadPersistedState() {
+      try {
+        const saved = localStorage.getItem('3923_contract_state');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.keys(parsed).forEach(k => { if (k in state) state[k] = parsed[k]; });
+        }
+      } catch(e) {}
+    }
+
+    function clearAllData() {
+      if (!confirm('Clear all form data and start fresh?')) return;
+      const fresh = {
+        contractType: null, selectedHotels: [], eventName: '', eventDescription: '',
+        companyName: '', contactName: '', contactTitle: '', contactPhone: '', contactEmail: '',
+        contactAddress: '', contactCity: '', contactState: '', contactZip: '',
+        seasonStartDate: '', seasonEndDate: '', roomBlockData: {}, paymentTerms: '',
+        paymentResponsibility: 'group', attritionPercentage: null, attritionDays: null,
+        concessions: [], cancellationDays: 30, sponsorshipValue: 0, hotelSigner: 'mark',
+        tradeAllocation: [], negotiatedRate: '', needsBookingLink: false, bookingLinkUrl: '',
+        cutoffDate: '', paymentTermOption: '', taxExempt: false, lnrPaymentType: 'individual',
+        lnrTargetNights: '', autoFillRooms: '',
+      };
+      Object.assign(state, fresh);
+      try { localStorage.removeItem('3923_contract_state'); } catch(e) {}
+      document.querySelectorAll('.contract-card').forEach(card => card.classList.remove('selected'));
+      document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+      document.getElementById('step0').classList.add('active');
+    }
+
+    // Load persisted state on page load
+    loadPersistedState();
+
+    function getCancellationText() {
+      const hotels = state.selectedHotels.map(id => HOTELS[id]);
+      const allSame = hotels.every(h => h.cancellationHours === hotels[0].cancellationHours);
+      if (allSame && hotels.length > 0) {
+        return 'Individual reservations within the room block are subject to the Hotel\'s standard cancellation policy, which requires notice of cancellation no later than ' + hotels[0].cancellationHours + ' hours prior to the scheduled check-in time. Failure to cancel within this window will result in a charge equal to one night\'s room and tax. This policy applies to each individual reservation, not to the block as a whole.';
+      }
+      let text = 'Individual reservations within the room block are subject to each property\'s standard cancellation policy. Cancellation windows are as follows: ';
+      text += hotels.map(h => h.shortName + ' (' + h.cancellationHours + ' hours)').join('; ');
+      text += '. Failure to cancel within the applicable window will result in a charge equal to one night\'s room and tax.';
+      return text;
+    }
+
+    function generateGroupContract() {
+      const { Document, Packer, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, ShadingType, AlignmentType } = docx;
+
+      const isSingleHotel = state.selectedHotels.length === 1;
+      const hotel = isSingleHotel ? HOTELS[state.selectedHotels[0]] : null;
+      const hotelEntity = isSingleHotel ? hotel.entity : MGMT_ENTITY;
+      const hotelDba = isSingleHotel ? hotel.dba : state.selectedHotels.map(id => HOTELS[id].dba).join(', ');
+      const signer = HOTEL_SIGNERS[state.hotelSigner];
+
+      let totalRooms = 0;
+      let totalRoomNights = 0;
+      let totalObligation = 0;
+      const roomTypes = new Set();
+
+      Object.entries(state.roomBlockData).forEach(([key, count]) => {
+        const [roomType, date] = key.split('_');
+        roomTypes.add(roomType);
+        totalRooms += count;
+        totalRoomNights += count;
+      });
+
+      const rate = parseFloat(state.negotiatedRate) || (state.selectedHotels.length > 0 ?
+        state.selectedHotels.reduce((sum, id) => sum + HOTELS[id].publishedRates['Standard'], 0) / state.selectedHotels.length : 0);
+      totalObligation = totalRoomNights * rate;
+
+      const children = [
+        // Title block
+        makeP('GROUP LODGING AGREEMENT — PAID ROOMS', { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
+        makeP(state.eventName, { bold: true, size: 28, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
+        makeP((state.eventDescription ? state.eventDescription + ' | ' : '') + 'Stay Dates: ' + formatDate(state.seasonStartDate) + ' — ' + formatDate(state.seasonEndDate),
+          { size: 22, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+
+        // Parties
+        makeHeader('AGREEMENT PARTIES & CONTACT INFORMATION'),
+        createPartyTable(state.companyName, state.contactName, state.contactTitle, state.contactAddress, state.contactCity,
+          state.contactState, state.contactZip, state.contactPhone, state.contactEmail,
+          hotelEntity, hotelDba, signer, isSingleHotel),
+
+        // Overview
+        makeHeader('AGREEMENT OVERVIEW'),
+        makeBody('This Group Lodging Agreement ("Agreement") is entered into between ' + state.companyName + ' ("Group"), represented by ' + state.contactName +
+          (state.contactTitle ? ', ' + state.contactTitle : '') +
+          ', and ' + hotelEntity + ', doing business as ' + hotelDba + ' ("Hotel"), managed by Thirty-Nine 23 Management, LLC. The purpose of this Agreement is to establish the terms and conditions under which the Hotel will provide lodging accommodations for the Group during the dates specified herein.'),
+        makeBody('Hotel agrees to set aside and hold a ' + (state.paymentResponsibility === 'individual' ? 'courtesy ' : '') + 'block of ' + totalRooms + ' room nights for the Group at a negotiated rate of $' + rate.toFixed(2) +
+          ' per room per night (exclusive of applicable taxes and fees). ' +
+          (state.paymentResponsibility === 'group'
+            ? 'Payment for all room nights within the block shall be the responsibility of the Group via a master account established with the Hotel.'
+            : 'This is a courtesy room block — no financial obligation is assumed by the Group. Each individual guest is solely responsible for making their own reservation within the block and for payment of their own room charges, applicable taxes, and incidental charges at the time of checkout.') +
+          ' The room block, rates, and terms outlined in this Agreement are contingent upon the Group\'s compliance with all provisions contained herein.'),
+
+        // Rate & Payment Summary
+        makeHeader('RATE & PAYMENT SUMMARY'),
+        createRateTable(rate, totalRooms, totalRoomNights, totalObligation, getPaymentTermText(), state.paymentResponsibility),
+
+        // Payment Terms
+        makeHeader('PAYMENT TERMS'),
+        makeBody(state.paymentResponsibility === 'individual'
+          ? 'This is a courtesy room block. The Group assumes no financial responsibility for room charges. Each individual guest is solely responsible for payment of their own room and tax at the time of checkout. A valid credit card will be collected from each guest at check-in. Guests must identify themselves as part of the ' + state.companyName + ' group and reference this Agreement at the time of reservation to receive the negotiated rate.'
+          : getPaymentTermText()),
+        makeBody('Incidental charges — including but not limited to room service, minibar purchases, telephone calls, parking, and any other ancillary charges — are the sole responsibility of each individual guest and must be settled at checkout.'),
+
+        // Room Block
+        makeHeader('ROOM BLOCK'),
+        makeBody('The following room block has been reserved for the Group. Room types and quantities are subject to availability at the time of booking and may be adjusted by mutual written agreement between the Group and Hotel.'),
+        createRoomBlockTable(state.selectedHotels, Array.from(roomTypes), state.roomBlockData, state.seasonStartDate, state.seasonEndDate),
+
+        // Taxes & Fees
+        makeHeader('TAXES & FEES'),
+        makeBody(state.taxExempt
+          ? 'The Group has represented that it is exempt from applicable state, county, and/or local occupancy taxes. The Group must provide a valid tax exemption certificate to the Hotel no later than seven (7) days prior to the Group\'s arrival date. If a valid tax exemption certificate is not received by this deadline, the Hotel reserves the right to charge all applicable occupancy taxes at the prevailing rate. The Group is responsible for verifying that its exemption applies to hotel occupancy taxes in the state of Texas.'
+          : 'All room rates quoted in this Agreement are exclusive of applicable state, county, and local taxes. The current combined hotel occupancy tax rate in Amarillo, TX is approximately 15%, which includes state, city, and county occupancy taxes. Tax rates are subject to change without notice and will be applied at the rate in effect at the time of the stay. The Group is responsible for all applicable taxes unless a valid tax exemption certificate is provided to the Hotel no later than seven (7) days prior to the Group\'s arrival date.'),
+
+        // Cancellation
+        makeHeader('CANCELLATION'),
+        makeBody(getCancellationText()),
+        makeBody('Group-level cancellation of the entire room block requires a minimum of thirty (30) days\' written notice prior to the scheduled arrival date. Cancellation requests must be submitted in writing to the Hotel\'s designated contact. In the event of a group-level cancellation with less than thirty (30) days\' notice, the Hotel reserves the right to assess cancellation fees as outlined in this Agreement.'),
+
+        // Cut-off Date
+        makeHeader('CUT-OFF DATE'),
+        makeBody('The cut-off date for this room block is ' + getCutoffDate() + '. All reservations within the block must be confirmed by this date. After the cut-off date, any unreserved rooms will be released back into the Hotel\'s general inventory and will be available on a first-come, first-served basis at the Hotel\'s prevailing rate. The Hotel is under no obligation to honor the negotiated group rate for reservations made after the cut-off date.'),
+
+        // Check-in / Check-out
+        makeHeader('CHECK-IN / CHECK-OUT'),
+        makeBody('Standard check-in time is ' + (hotel ? hotel.checkin : '3:00 PM') + ' and standard check-out time is ' + (hotel ? hotel.checkout : '11:00 AM') + '. Early arrivals will be accommodated on a space-available basis and cannot be guaranteed. Guests requiring early check-in are encouraged to contact the Hotel in advance. Late check-out requests are subject to availability and may incur additional charges. Baggage storage is available at the front desk for guests arriving before check-in or departing after check-out.'),
+      ];
+
+      // Attrition
+      if (state.attritionPercentage) {
+        children.push(makeHeader('ATTRITION'));
+        children.push(makeBody('The Group may reduce the contracted room block by up to ' + state.attritionPercentage + '% of the total reserved room nights without financial penalty, provided that written notice of the reduction is received by the Hotel no later than ' + state.attritionDays + ' days prior to the Group\'s first scheduled arrival date. Reductions beyond the ' + state.attritionPercentage + '% attrition allowance may result in attrition fees equal to the room rate plus applicable taxes for each room night below the allowable threshold.'));
+      }
+
+      // Concessions
+      if (state.concessions.length > 0) {
+        children.push(makeHeader('CONCESSIONS & AMENITIES'));
+        children.push(makeBody('The Hotel agrees to provide the following concessions and amenities to the Group and its guests as part of this Agreement: ' + state.concessions.join(', ') + '. These concessions are provided at no additional charge to the Group and are contingent upon the Group\'s fulfillment of the room block commitment outlined in this Agreement.'));
+      }
+
+      // Booking Link
+      if (state.needsBookingLink) {
+        children.push(makeHeader('BOOKING LINK'));
+        if (state.bookingLinkUrl) {
+          children.push(makeBody('A dedicated online booking link has been created for the Group\'s convenience. Guests may make individual reservations within the room block using the following link: ' + state.bookingLinkUrl));
+        } else {
+          children.push(makeBody('A dedicated online booking link will be created for the Group\'s convenience and delivered via email to the Group\'s designated contact within seven (7) business days of the full execution of this Agreement. Guests may use this link to make individual reservations within the room block at the negotiated rate.'));
+        }
+        children.push(makeBody('Reservations made through the booking link are subject to the same terms, rates, and cut-off date outlined in this Agreement.'));
+      }
+
+      // Entire Agreement
+      children.push(makeHeader('ENTIRE AGREEMENT'));
+      children.push(makeBody('This Agreement, together with any addenda, exhibits, or amendments attached hereto, constitutes the entire agreement between the parties with respect to the subject matter herein. No prior oral or written agreements, representations, or understandings shall be binding upon either party except as expressly set forth in this Agreement. This Agreement may not be modified, amended, or supplemented except by a written instrument signed by both parties. This Agreement shall become binding upon full execution by both parties below.'));
+      children.push(makeBody('The undersigned represent and warrant that they are duly authorized to execute this Agreement on behalf of their respective organizations and that the execution of this Agreement has been duly approved by all necessary corporate or organizational action.'));
+
+      // Signatures
+      children.push(makeHeader('ACCEPTED AND AGREED TO'));
+      children.push(createSignatureTable(state.companyName, hotelEntity, hotelDba, signer));
+
+      const doc = new Document({
+        sections: [{
+          margins: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+          children: children
+        }]
+      });
+
+      Packer.toBlob(doc).then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = state.eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_group_contract.docx';
+        link.click();
+      });
+    }
+
+    function generateLNRContract() {
+      const { Document, Packer, AlignmentType } = docx;
+
+      const isSingleHotel = state.selectedHotels.length === 1;
+      const hotel = isSingleHotel ? HOTELS[state.selectedHotels[0]] : null;
+      const hotelEntity = isSingleHotel ? hotel.entity : MGMT_ENTITY;
+      const hotelDba = isSingleHotel ? hotel.dba : state.selectedHotels.map(id => HOTELS[id].dba).join(', ');
+      const signer = HOTEL_SIGNERS[state.hotelSigner];
+      const rate = parseFloat(state.negotiatedRate) || 0;
+      const targetNights = parseInt(state.lnrTargetNights) || 0;
+
+      const children = [
+        makeP('LOCAL NEGOTIATED RATE AGREEMENT', { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
+        makeP(state.companyName, { bold: true, size: 28, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+
+        makeHeader('AGREEMENT PARTIES & CONTACT INFORMATION'),
+        createPartyTable(state.companyName, state.contactName, state.contactTitle, state.contactAddress, state.contactCity,
+          state.contactState, state.contactZip, state.contactPhone, state.contactEmail,
+          hotelEntity, hotelDba, signer, isSingleHotel, 'COMPANY'),
+
+        makeHeader('AGREEMENT OVERVIEW'),
+        makeBody('This Local Negotiated Rate Agreement ("Agreement") is entered into between ' + state.companyName + ' ("Company"), represented by ' + state.contactName +
+          (state.contactTitle ? ', ' + state.contactTitle : '') +
+          ', and ' + hotelEntity + ', doing business as ' + hotelDba +
+          ', managed by Thirty-Nine 23 Management, LLC ("Hotel"). The purpose of this Agreement is to establish a preferred negotiated room rate for the Company\'s employees, contractors, and authorized guests who require lodging at the Hotel\'s participating properties on an ongoing basis.'),
+        makeBody('Under the terms of this Agreement, the Hotel agrees to offer a negotiated room rate of $' + rate.toFixed(2) +
+          ' per room per night (exclusive of applicable taxes and fees) to all eligible guests who identify themselves as traveling on behalf of ' + state.companyName +
+          ' at the time of reservation. This rate is available on a space-available basis and is not guaranteed during blackout dates, citywide events, or periods of high demand. The Company targets a total of ' +
+          (targetNights > 0 ? targetNights.toLocaleString() : '[TBD]') +
+          ' room nights annually across the participating properties.'),
+
+        makeHeader('NEGOTIATED RATES'),
+        createRateTableLNR(state.selectedHotels, rate),
+
+        makeHeader('ELIGIBLE PROPERTIES'),
+        makeBody('The negotiated rate is available at the following participating properties. Contact information for each property is provided for reservation purposes.'),
+        createEligiblePropertiesTable(state.selectedHotels),
+
+        makeHeader('RESERVATION PROCEDURES'),
+        makeBody('Eligible guests should contact the Hotel directly by phone to make reservations and must reference this Local Negotiated Rate Agreement and the company name "' + state.companyName + '" at the time of booking to receive the negotiated rate. Reservations should be made as early as possible, as the negotiated rate is subject to availability. Walk-in guests may also receive the negotiated rate by presenting valid company identification at check-in, subject to availability.' +
+          (state.needsBookingLink ? ' For convenience, reservations may also be made using the dedicated online booking link provided in this Agreement.' : '')),
+
+        makeHeader('PAYMENT'),
+        makeBody(state.lnrPaymentType === 'direct_bill'
+          ? 'Payment will be made via direct billing. ' + state.companyName + ' agrees to remit full payment for all room charges within thirty (30) days following each guest\'s departure date. A valid credit application and credit card authorization form must be on file with the Hotel prior to the commencement of direct billing. A valid credit card will be collected from each individual guest at check-in to cover incidental charges. Incidental charges — including but not limited to room service, minibar purchases, telephone calls, parking, and any other ancillary charges — are the sole responsibility of each individual guest and must be settled at checkout unless specifically included in the direct billing arrangement.'
+          : 'Each individual guest is solely responsible for payment of their own room charges, including room rate, applicable taxes, and any incidental charges, at the time of checkout. ' + state.companyName + ' assumes no financial responsibility for individual guest reservations, no-shows, or cancellation charges unless a separate written arrangement has been made with the Hotel.'),
+
+        makeHeader('TAXES & FEES'),
+        makeBody(state.taxExempt
+          ? state.companyName + ' has represented that it is exempt from applicable state, county, and/or local occupancy taxes. The Company must provide a valid tax exemption certificate to the Hotel prior to the first reservation under this Agreement. If a valid tax exemption certificate is not on file, the Hotel reserves the right to charge all applicable occupancy taxes at the prevailing rate. The Company is responsible for verifying that its exemption applies to hotel occupancy taxes in the state of Texas.'
+          : 'All rates quoted in this Agreement are exclusive of applicable state, county, and local taxes. The current combined hotel occupancy tax rate in Amarillo, TX is approximately 15%, which includes state, city, and county occupancy taxes. Tax rates are subject to change without notice and will be applied at the rate in effect at the time of the stay.'),
+
+        makeHeader('CANCELLATION'),
+        makeBody(getCancellationText()),
+      ];
+
+      // Concessions
+      if (state.concessions.length > 0) {
+        children.push(makeHeader('CONCESSIONS & AMENITIES'));
+        children.push(makeBody('The Hotel agrees to provide the following concessions and amenities to the Company\'s guests as part of this Agreement: ' + state.concessions.join(', ') + '. These concessions are provided at no additional charge and are contingent upon the Company\'s continued production under this Agreement.'));
+      }
+
+      // Booking Link
+      if (state.needsBookingLink) {
+        children.push(makeHeader('BOOKING LINK'));
+        if (state.bookingLinkUrl) {
+          children.push(makeBody('A dedicated online booking link has been created for the Company\'s convenience. Eligible guests may make reservations at the negotiated rate using the following link: ' + state.bookingLinkUrl));
+        } else {
+          children.push(makeBody('A dedicated online booking link will be created for the Company\'s convenience and delivered via email to the Company\'s designated contact within seven (7) business days of the full execution of this Agreement. Eligible guests may use this link to make reservations at the negotiated rate.'));
+        }
+        children.push(makeBody('Reservations made through the booking link are subject to the same terms and availability conditions outlined in this Agreement.'));
+      }
+
+      // Agreement Term
+      children.push(makeHeader('AGREEMENT TERM & PRODUCTION REVIEW'));
+      children.push(makeBody('This Agreement is effective for a period of one (1) year from the date of execution and shall automatically renew for successive one-year terms unless either party provides thirty (30) days\' written notice of its intent not to renew.'));
+      children.push(makeBody('The Hotel will evaluate the Company\'s room night production on a quarterly basis against the target of ' +
+        (targetNights > 0 ? targetNights.toLocaleString() : '[TBD]') +
+        ' annual room nights. In the event that production levels do not meet the Hotel\'s minimum expectations, the Hotel reserves the right to adjust the negotiated rate or terminate this Agreement with thirty (30) days\' written notice. Any rate adjustments will apply only to reservations made after the effective date of the adjustment and will not affect existing confirmed reservations. The Company will be notified in writing of any rate adjustments or changes to the terms of this Agreement.'));
+
+      // Entire Agreement
+      children.push(makeHeader('ENTIRE AGREEMENT'));
+      children.push(makeBody('This Agreement, together with any addenda, exhibits, or amendments attached hereto, constitutes the entire agreement between the parties with respect to the subject matter herein. No prior oral or written agreements, representations, or understandings shall be binding upon either party except as expressly set forth in this Agreement. This Agreement may not be modified, amended, or supplemented except by a written instrument signed by both parties. This Agreement shall become binding upon full execution by both parties below.'));
+      children.push(makeBody('The undersigned represent and warrant that they are duly authorized to execute this Agreement on behalf of their respective organizations and that the execution of this Agreement has been duly approved by all necessary corporate or organizational action.'));
+
+      // Signatures
+      children.push(makeHeader('ACCEPTED AND AGREED TO'));
+      children.push(createSignatureTable(state.companyName, hotelEntity, hotelDba, signer, 'COMPANY'));
+
+      const doc = new Document({
+        sections: [{
+          margins: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+          children: children
+        }]
+      });
+
+      Packer.toBlob(doc).then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = state.companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_lnr_agreement.docx';
+        link.click();
+      });
+    }
+
+    function generateTradeContract() {
+      const { Document, Packer, AlignmentType } = docx;
+      const signer = HOTEL_SIGNERS[state.hotelSigner];
+      const hotelDba = state.selectedHotels.map(id => HOTELS[id].dba).join(', ');
+      const totalNights = state.tradeAllocation.reduce((sum, a) => sum + (a.nights || 0), 0);
+
+      const children = [
+        makeP('IN-KIND SPONSORSHIP LODGING AGREEMENT', { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
+        makeP(state.eventName, { size: 22, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
+        makeP('Stay Dates: ' + formatDate(state.seasonStartDate) + ' — ' + formatDate(state.seasonEndDate),
+          { size: 22, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+
+        makeHeader('AGREEMENT PARTIES & CONTACT INFORMATION'),
+        createPartyTable(state.companyName, state.contactName, state.contactTitle, state.contactAddress, state.contactCity,
+          state.contactState, state.contactZip, state.contactPhone, state.contactEmail,
+          MGMT_ENTITY, hotelDba, signer, false, 'SPONSOR'),
+
+        makeHeader('AGREEMENT OVERVIEW'),
+        makeBody('This In-Kind Sponsorship Lodging Agreement ("Agreement") is entered into between ' + MGMT_ENTITY + ' ("Owner"), managing the properties listed herein, and ' + state.companyName + ' ("Group"), represented by ' + state.contactName +
+          (state.contactTitle ? ', ' + state.contactTitle : '') + '. The purpose of this Agreement is to establish the terms and conditions under which the Owner will provide complimentary lodging accommodations to the Group on an in-kind trade basis.'),
+        makeBody('In consideration of the Group\'s sponsorship package — valued at $' + state.sponsorshipValue.toFixed(2) +
+          ' — the Owner agrees to provide a total of ' + totalNights + ' complimentary room nights across the participating properties listed below. No cash payment is required from the Group for these room nights. This trade arrangement is subject to the terms and conditions outlined in this Agreement.'),
+
+        makeHeader('ELIGIBLE PROPERTIES'),
+        makeBody('The following properties are participating in this in-kind trade arrangement. All room nights must be utilized at one of the properties listed below.'),
+        createEligiblePropertiesTable(state.selectedHotels),
+
+        makeHeader('ROOM NIGHT ALLOCATION'),
+        makeBody('The following room night allocation has been agreed upon by the Owner and the Group. The allocation specifies the guest, assigned property, number of room nights, and approximate dates of stay. Changes to this allocation may be made with the Owner\'s prior written approval.'),
+        createTradeAllocationTable(state.tradeAllocation),
+
+        makeHeader('GUEST IDENTIFICATION'),
+        makeBody('The Group shall provide the Owner with the full legal names of all guests who will occupy trade rooms no later than seven (7) calendar days prior to each guest\'s scheduled check-in date. Rooms cannot be held or confirmed without guest identification. The Owner reserves the right to deny accommodation to any guest not identified in advance.'),
+
+        makeHeader('SPONSORSHIP BENEFITS'),
+        makeBody('In consideration of the complimentary room nights provided by the Owner, the Group agrees to deliver sponsorship benefits valued at $' + state.sponsorshipValue.toFixed(2) + ' to the Owner in connection with the ' + state.eventName + '. The specific sponsorship benefits to be provided by the Group are detailed in Addendum A, which is attached hereto and incorporated by reference into this Agreement. Both parties must execute Addendum A prior to or concurrent with the execution of this Agreement.'),
+
+        makeHeader('INCIDENTALS'),
+        makeBody('Incidental charges — including but not limited to room service, minibar purchases, telephone calls, parking, laundry services, and any other ancillary charges — are the sole responsibility of each individual guest and must be settled at the time of checkout. The in-kind trade covers room and applicable tax only.'),
+
+        makeHeader('CANCELLATION'),
+        makeBody(getCancellationText()),
+        makeBody('Unused room nights are not transferable and may not be carried over beyond the stay dates specified in this Agreement unless otherwise agreed upon in writing by both parties.'),
+
+        makeHeader('CHECK-IN / CHECK-OUT'),
+        makeBody('Standard check-in time is 3:00 PM and standard check-out time is 11:00 AM. Early arrivals will be accommodated on a space-available basis and cannot be guaranteed. Late check-out requests are subject to availability and may incur additional charges.'),
+
+        makeHeader('ENTIRE AGREEMENT'),
+        makeBody('This Agreement, together with any addenda (including Addendum A — Sponsorship Benefits), exhibits, or amendments attached hereto, constitutes the entire agreement between the parties with respect to the subject matter herein. No prior oral or written agreements, representations, or understandings shall be binding upon either party except as expressly set forth in this Agreement. This Agreement may not be modified, amended, or supplemented except by a written instrument signed by both parties. This Agreement shall become binding upon full execution by both parties below.'),
+        makeBody('The undersigned represent and warrant that they are duly authorized to execute this Agreement on behalf of their respective organizations and that the execution of this Agreement has been duly approved by all necessary corporate or organizational action.'),
+
+        makeHeader('ACCEPTED AND AGREED TO'),
+        createSignatureTable(state.companyName, MGMT_ENTITY, hotelDba, signer, 'SPONSOR'),
+      ];
+
+      const doc = new Document({
+        sections: [{
+          margins: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+          children: children
+        }]
+      });
+
+      Packer.toBlob(doc).then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = state.eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_trade_agreement.docx';
+        link.click();
+      });
+    }
+
+    function createTableCell(text, isHeader, opts = {}) {
+      const { TableCell, Paragraph, TextRun, ShadingType } = docx;
+      const runOpts = { text: text, font: 'Calibri', size: opts.size || 22 };
+      if (isHeader) { runOpts.bold = true; runOpts.color = 'FFFFFF'; }
+      if (opts.bold) runOpts.bold = true;
+
+      return new TableCell({
+        shading: isHeader ? { fill: '0A1F38', type: ShadingType.CLEAR } : undefined,
+        children: [new Paragraph({ children: [new TextRun(runOpts)] })],
+        margins: { top: 60, bottom: 60, left: 100, right: 100 },
+        width: opts.width ? { size: opts.width, type: docx.WidthType.DXA } : undefined,
+      });
+    }
+
+    function createPartyTable(companyName, contactName, contactTitle, address, city, stateVal, zip, phone, email,
+                              hotelEntity, hotelDba, signer, isSingleHotel, clientLabel) {
+      const { Table, TableRow, WidthType } = docx;
+      const label = clientLabel || 'GROUP';
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              createTableCell(label, true),
+              createTableCell(isSingleHotel ? 'HOTEL' : 'HOTEL MANAGEMENT', true),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell(companyName, false),
+              createTableCell(hotelEntity, false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell(contactName + (contactTitle ? ', ' + contactTitle : ''), false),
+              createTableCell('d/b/a ' + hotelDba, false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell(address, false),
+              createTableCell(signer.name + ', ' + signer.title, false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell(city + ', ' + stateVal + ' ' + zip, false),
+              createTableCell(formatPhone(signer.phone) + ' | ' + signer.email, false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell(formatPhone(phone), false),
+              createTableCell('', false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell(email, false),
+              createTableCell('', false),
+            ]
+          }),
+        ]
+      });
+    }
+
+    function createRateTable(rate, rooms, roomNights, obligation, paymentTerms, responsibility) {
+      const { Table, TableRow, WidthType } = docx;
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              createTableCell('TERM', true),
+              createTableCell('DETAIL', true),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell('Rate', false),
+              createTableCell('$' + rate.toFixed(2) + '/night', false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell('Total Room Nights', false),
+              createTableCell(roomNights.toString(), false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell('Total Obligation (pre-tax)', false),
+              createTableCell('$' + obligation.toFixed(2), false),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createTableCell('Payment Responsibility', false),
+              createTableCell(responsibility === 'group' ? 'Group' : 'Individual Guests', false),
+            ]
+          }),
+        ]
+      });
+    }
+
+    function createRateTableLNR(hotelIds, negotiatedRate) {
+      const { Table, TableRow, WidthType } = docx;
+
+      const rows = [
+        new TableRow({
+          children: [
+            createTableCell('PROPERTY', true),
+            createTableCell('NEGOTIATED RATE', true),
+          ]
+        })
+      ];
+
+      hotelIds.forEach(hotelId => {
+        const hotel = HOTELS[hotelId];
+        const displayRate = negotiatedRate ? '$' + negotiatedRate.toFixed(2) + ' per room per night' : 'Rate to be determined';
+        rows.push(new TableRow({
+          children: [
+            createTableCell(hotel.dba, false),
+            createTableCell(displayRate, false),
+          ]
+        }));
+      });
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: rows
+      });
+    }
+
+    function createRoomBlockTable(hotelIds, roomTypes, roomBlockData, startDate, endDate) {
+      const { Table, TableRow, WidthType } = docx;
+
+      const dates = generateDateRange(new Date(startDate), new Date(endDate));
+      const numDays = dates.length;
+
+      // For long stays (>7 days), use summary format
+      if (numDays > 7) {
+        const rows = [new TableRow({ children: [
+          createTableCell('PROPERTY', true),
+          createTableCell('ROOM TYPE', true),
+          createTableCell('ROOMS / NIGHT', true),
+          createTableCell('TOTAL NIGHTS', true),
+        ]})];
+
+        let grandTotal = 0;
+        hotelIds.forEach(hotelId => {
+          const hotel = HOTELS[hotelId];
+          hotel.roomTypes.forEach(roomType => {
+            // Get the per-night count (from first date as representative)
+            const key = roomType + '_' + dates[0];
+            const perNight = roomBlockData[key] || 0;
+            if (perNight > 0) {
+              const total = perNight * numDays;
+              grandTotal += total;
+              rows.push(new TableRow({ children: [
+                createTableCell(hotel.shortName, false),
+                createTableCell(roomType, false),
+                createTableCell(perNight.toString(), false),
+                createTableCell(total.toString(), false),
+              ]}));
+            }
+          });
+        });
+
+        rows.push(new TableRow({ children: [
+          createTableCell('TOTAL', false, { bold: true }),
+          createTableCell('', false),
+          createTableCell('', false),
+          createTableCell(grandTotal.toString(), false, { bold: true }),
+        ]}));
+
+        return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
+      }
+
+      // For short stays (<=7 days), use date-by-date grid
+      const rows = [];
+
+      const headerCells = [createTableCell('Room Type', true)];
+      dates.forEach(date => {
+        const d = new Date(date + 'T00:00:00');
+        headerCells.push(createTableCell((d.getMonth() + 1) + '/' + d.getDate(), true));
+      });
+      rows.push(new TableRow({ children: headerCells }));
+
+      hotelIds.forEach(hotelId => {
+        const hotel = HOTELS[hotelId];
+        const hotelHeaderCells = [createTableCell(hotel.name, true)];
+        dates.forEach(() => hotelHeaderCells.push(createTableCell('', true)));
+        rows.push(new TableRow({ children: hotelHeaderCells }));
+
+        roomTypes.forEach(roomType => {
+          const cells = [createTableCell(roomType, false)];
+          dates.forEach(date => {
+            const key = roomType + '_' + date;
+            const val = roomBlockData[key] || 0;
+            cells.push(createTableCell(val.toString(), false));
+          });
+          rows.push(new TableRow({ children: cells }));
+        });
+      });
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: rows
+      });
+    }
+
+    function createEligiblePropertiesTable(hotelIds) {
+      const { Table, TableRow, WidthType } = docx;
+
+      const rows = [
+        new TableRow({
+          children: [
+            createTableCell('PROPERTY NAME', true),
+            createTableCell('ADDRESS', true),
+            createTableCell('PHONE', true),
+          ]
+        })
+      ];
+
+      hotelIds.forEach(hotelId => {
+        const hotel = HOTELS[hotelId];
+        rows.push(new TableRow({
+          children: [
+            createTableCell(hotel.dba, false),
+            createTableCell(hotel.address + ', ' + hotel.city + ' ' + hotel.state + ' ' + hotel.zip, false),
+            createTableCell(hotel.phone, false),
+          ]
+        }));
+      });
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: rows
+      });
+    }
+
+    function createTradeAllocationTable(allocation) {
+      const { Table, TableRow, WidthType } = docx;
+
+      const rows = [
+        new TableRow({
+          children: [
+            createTableCell('GUEST', true),
+            createTableCell('PROPERTY', true),
+            createTableCell('NIGHTS', true),
+            createTableCell('DATES', true),
+          ]
+        })
+      ];
+
+      allocation.forEach(item => {
+        if (item.person && item.property) {
+          rows.push(new TableRow({
+            children: [
+              createTableCell(item.person, false),
+              createTableCell(item.property, false),
+              createTableCell(item.nights.toString(), false),
+              createTableCell(item.dates, false),
+            ]
+          }));
+        }
+      });
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: rows
+      });
+    }
+
+    function createSignatureTable(companyName, hotelEntity, hotelDba, signer, clientLabel) {
+      const { Table, TableRow, Paragraph, TextRun, WidthType } = docx;
+      const label = clientLabel || 'GROUP';
+
+      const createSigCell = (text) => {
+        const { TableCell } = docx;
+        return new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: text, font: 'Calibri', size: 22 })] })],
+          margins: { top: 60, bottom: 60, left: 100, right: 100 },
+        });
+      };
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              createSigCell(label + ': ' + companyName),
+              createSigCell('HOTEL: ' + hotelEntity),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createSigCell(''),
+              createSigCell('d/b/a ' + hotelDba),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createSigCell('By: ' + state.contactName),
+              createSigCell('By: ' + signer.name),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createSigCell('Signature: _____________________'),
+              createSigCell('Signature: _____________________'),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createSigCell('Title: ' + (state.contactTitle || '_____________________')),
+              createSigCell('Title: ' + signer.title),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createSigCell('Phone: ' + (state.contactPhone ? formatPhone(state.contactPhone) : '_____________________')),
+              createSigCell('Phone: ' + formatPhone(signer.phone)),
+            ]
+          }),
+          new TableRow({
+            children: [
+              createSigCell('Dated: _____________________'),
+              createSigCell('Dated: _____________________'),
+            ]
+          }),
+        ]
+      });
+    }
+  </script>
+</body>
+</html>
