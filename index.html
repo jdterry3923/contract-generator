@@ -594,6 +594,7 @@
       state.taxExempt = document.getElementById('taxExempt')?.checked || false;
       state.lnrPaymentType = document.querySelector('input[name="lnrPaymentType"]:checked')?.value || 'individual';
       state.lnrTargetNights = document.getElementById('lnrTargetNights')?.value || '';
+      state.lnrMaxRoomsPerNight = document.getElementById('lnrMaxRoomsPerNight')?.value || '';
 
       state.concessions = [];
       document.querySelectorAll('input[name="concessions"]:checked').forEach(cb => {
@@ -700,6 +701,10 @@
     function renderLNRDetails(container) {
       let html = '<div class="form-group"><label for="lnrTargetNights">Target Annual Room Nights *</label>';
       html += '<input type="number" id="lnrTargetNights" min="0" value="' + (state.lnrTargetNights || '') + '" placeholder="e.g., 500">';
+      html += '</div>';
+      html += '<div class="form-group"><label for="lnrMaxRoomsPerNight">Maximum Rooms Per Night *</label>';
+      html += '<input type="number" id="lnrMaxRoomsPerNight" min="1" value="' + (state.lnrMaxRoomsPerNight || '') + '" placeholder="e.g., 10">';
+      html += '<small style="color:#666; display:block; margin-top:4px;">Limits how many rooms this account can book on any given night</small>';
       html += '<p style="font-size: 12px; color: #666; margin-top: 4px;">Total room nights expected per year. Production will be evaluated quarterly.</p></div>';
       container.innerHTML = html;
     }
@@ -965,6 +970,9 @@
         if (state.lnrTargetNights) {
           html += '<div class="review-item"><span class="review-label">Target Annual Nights:</span><span class="review-value">' + state.lnrTargetNights + '</span></div>';
         }
+        if (state.lnrMaxRoomsPerNight) {
+          html += '<div class="review-item"><span class="review-label">Max Rooms / Night:</span><span class="review-value">' + state.lnrMaxRoomsPerNight + '</span></div>';
+        }
         if (state.taxExempt) {
           html += '<div class="review-item"><span class="review-label">Tax Exempt:</span><span class="review-value">Yes</span></div>';
         }
@@ -1138,7 +1146,7 @@
         concessions: [], cancellationDays: 30, sponsorshipValue: 0, hotelSigner: 'mark',
         tradeAllocation: [], negotiatedRate: '', needsBookingLink: false, bookingLinkUrl: '',
         cutoffDate: '', paymentTermOption: '', taxExempt: false, lnrPaymentType: 'individual',
-        lnrTargetNights: '', autoFillRooms: '',
+        lnrTargetNights: '', lnrMaxRoomsPerNight: '', autoFillRooms: '',
       };
       Object.assign(state, fresh);
       try { localStorage.removeItem('3923_contract_state'); } catch(e) {}
@@ -1305,6 +1313,7 @@
       const signer = HOTEL_SIGNERS[state.hotelSigner];
       const rate = parseFloat(state.negotiatedRate) || 0;
       const targetNights = parseInt(state.lnrTargetNights) || 0;
+      const maxRooms = parseInt(state.lnrMaxRoomsPerNight) || 0;
 
       const children = [
         makeP('LOCAL NEGOTIATED RATE AGREEMENT', { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
@@ -1324,7 +1333,8 @@
           ' per room per night (exclusive of applicable taxes and fees) to all eligible guests who identify themselves as traveling on behalf of ' + state.companyName +
           ' at the time of reservation. This rate is available on a space-available basis and is not guaranteed during blackout dates, citywide events, or periods of high demand. The Company targets a total of ' +
           (targetNights > 0 ? targetNights.toLocaleString() : '[TBD]') +
-          ' room nights annually across the participating properties.'),
+          ' room nights annually across the participating properties.' +
+          (maxRooms > 0 ? ' The Company is limited to a maximum of ' + maxRooms + ' room' + (maxRooms === 1 ? '' : 's') + ' per night at each participating property.' : '')),
 
         makeHeader('NEGOTIATED RATES'),
         createRateTableLNR(state.selectedHotels, rate),
@@ -1335,6 +1345,7 @@
 
         makeHeader('RESERVATION PROCEDURES'),
         makeBody('Eligible guests should contact the Hotel directly by phone to make reservations and must reference this Local Negotiated Rate Agreement and the company name "' + state.companyName + '" at the time of booking to receive the negotiated rate. Reservations should be made as early as possible, as the negotiated rate is subject to availability. Walk-in guests may also receive the negotiated rate by presenting valid company identification at check-in, subject to availability.' +
+          (maxRooms > 0 ? ' Reservations under this Agreement are limited to a maximum of ' + maxRooms + ' room' + (maxRooms === 1 ? '' : 's') + ' per night at each participating property. Requests exceeding this limit are subject to Hotel approval and may be offered at the prevailing rate.' : '') +
           (state.needsBookingLink ? ' For convenience, reservations may also be made using the dedicated online booking link provided in this Agreement.' : '')),
 
         makeHeader('PAYMENT'),
