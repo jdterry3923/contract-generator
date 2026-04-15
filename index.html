@@ -379,15 +379,15 @@
       <div id="step0" class="step active">
         <div class="step-title">Select Contract Type</div>
         <div class="contract-types">
-          <div class="contract-card" onclick="selectContractType('group')">
+          <div class="contract-card" onclick="selectContractType('group', this)">
             <h3>Group Contract</h3>
             <p>Paid room block arrangement for group events across one or multiple hotels</p>
           </div>
-          <div class="contract-card" onclick="selectContractType('lnr')">
+          <div class="contract-card" onclick="selectContractType('lnr', this)">
             <h3>LNR Agreement</h3>
             <p>Local Negotiated Rate agreement for individual rate negotiations</p>
           </div>
-          <div class="contract-card" onclick="selectContractType('trade')">
+          <div class="contract-card" onclick="selectContractType('trade', this)">
             <h3>In-Kind Trade</h3>
             <p>Sponsorship lodging agreement with in-kind exchange for multiple properties</p>
           </div>
@@ -501,13 +501,21 @@
       taxExempt: false,
       lnrPaymentType: 'individual',
       lnrTargetNights: '',
+      lnrMaxRoomsPerNight: '',
+      lnrRateType: 'flat',
+      lnrPerHotelRates: {},
+      lnrDiscountPercent: '',
+      lnrStartDate: '',
+      lnrEndDate: '',
+      commissionable: false,
+      commissionPercent: '',
       autoFillRooms: '',
     };
 
-    function selectContractType(type) {
+    function selectContractType(type, el) {
       state.contractType = type;
       document.querySelectorAll('.contract-card').forEach(card => card.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+      if (el) el.classList.add('selected');
       renderStep1();
       goToStep(1);
     }
@@ -595,6 +603,17 @@
       state.lnrPaymentType = document.querySelector('input[name="lnrPaymentType"]:checked')?.value || 'individual';
       state.lnrTargetNights = document.getElementById('lnrTargetNights')?.value || '';
       state.lnrMaxRoomsPerNight = document.getElementById('lnrMaxRoomsPerNight')?.value || '';
+      state.lnrRateType = document.querySelector('input[name="lnrRateType"]:checked')?.value || state.lnrRateType || 'flat';
+      state.lnrDiscountPercent = document.getElementById('lnrDiscountPercent')?.value || '';
+      state.lnrStartDate = document.getElementById('lnrStartDate')?.value || '';
+      state.lnrEndDate = document.getElementById('lnrEndDate')?.value || '';
+      state.commissionable = document.getElementById('commissionable')?.checked || false;
+      state.commissionPercent = document.getElementById('commissionPercent')?.value || '';
+
+      // Save per-hotel LNR rates
+      document.querySelectorAll('input[data-hotel-rate]')?.forEach(input => {
+        state.lnrPerHotelRates[input.dataset.hotelRate] = input.value;
+      });
 
       state.concessions = [];
       document.querySelectorAll('input[name="concessions"]:checked').forEach(cb => {
@@ -699,13 +718,16 @@
     }
 
     function renderLNRDetails(container) {
-      let html = '<div class="form-group"><label for="lnrTargetNights">Target Annual Room Nights *</label>';
+      let html = '<div class="form-group"><label>Agreement Period *</label><div class="form-row">';
+      html += '<div><label style="margin-bottom: 8px;">Start Date</label><input type="date" id="lnrStartDate" value="' + (state.lnrStartDate || '') + '"></div>';
+      html += '<div><label style="margin-bottom: 8px;">End Date</label><input type="date" id="lnrEndDate" value="' + (state.lnrEndDate || '') + '"></div>';
+      html += '</div></div>';
+      html += '<div class="form-group"><label for="lnrTargetNights">Target Annual Room Nights *</label>';
       html += '<input type="number" id="lnrTargetNights" min="0" value="' + (state.lnrTargetNights || '') + '" placeholder="e.g., 500">';
-      html += '</div>';
+      html += '<small style="color:#666; display:block; margin-top:4px;">Total room nights expected per year. Production will be evaluated quarterly.</small></div>';
       html += '<div class="form-group"><label for="lnrMaxRoomsPerNight">Maximum Rooms Per Night *</label>';
       html += '<input type="number" id="lnrMaxRoomsPerNight" min="1" value="' + (state.lnrMaxRoomsPerNight || '') + '" placeholder="e.g., 10">';
-      html += '<small style="color:#666; display:block; margin-top:4px;">Limits how many rooms this account can book on any given night</small>';
-      html += '<p style="font-size: 12px; color: #666; margin-top: 4px;">Total room nights expected per year. Production will be evaluated quarterly.</p></div>';
+      html += '<small style="color:#666; display:block; margin-top:4px;">Limits how many rooms this account can book on any given night</small></div>';
       container.innerHTML = html;
     }
 
@@ -857,10 +879,42 @@
       const container = document.getElementById('step4Content');
       let html = '';
 
-      // Rate field for Group and LNR
-      if (state.contractType === 'group' || state.contractType === 'lnr') {
+      // Rate field for Group
+      if (state.contractType === 'group') {
         html += '<div class="form-group"><label for="negotiatedRate">Negotiated Rate (per room per night) *</label>';
         html += '<input type="number" id="negotiatedRate" min="0" step="0.01" value="' + (state.negotiatedRate || '') + '" placeholder="e.g., 99.00"></div>';
+      }
+
+      // Dynamic rate for LNR — flat rate or % off BAR, per-hotel
+      if (state.contractType === 'lnr') {
+        html += '<div class="form-group"><label>Rate Structure *</label><div class="radio-group">';
+        html += '<div class="radio-item"><input type="radio" name="lnrRateType" value="flat" ' + (state.lnrRateType === 'flat' ? 'checked' : '') + ' onchange="saveFormData(); renderStep4();"><label>Flat Rate (same for all hotels)</label></div>';
+        html += '<div class="radio-item"><input type="radio" name="lnrRateType" value="per_hotel" ' + (state.lnrRateType === 'per_hotel' ? 'checked' : '') + ' onchange="saveFormData(); renderStep4();"><label>Per-Hotel Rate (different rate per property)</label></div>';
+        html += '<div class="radio-item"><input type="radio" name="lnrRateType" value="percent_off" ' + (state.lnrRateType === 'percent_off' ? 'checked' : '') + ' onchange="saveFormData(); renderStep4();"><label>% Off Best Available Rate</label></div>';
+        html += '</div></div>';
+
+        if (state.lnrRateType === 'flat') {
+          html += '<div class="form-group"><label for="negotiatedRate">Negotiated Rate (per room per night) *</label>';
+          html += '<input type="number" id="negotiatedRate" min="0" step="0.01" value="' + (state.negotiatedRate || '') + '" placeholder="e.g., 99.00"></div>';
+        } else if (state.lnrRateType === 'per_hotel') {
+          html += '<div class="form-group"><label>Per-Hotel Negotiated Rates *</label>';
+          state.selectedHotels.forEach(hid => {
+            const h = HOTELS[hid];
+            html += '<div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">';
+            html += '<span style="min-width:200px;">' + h.shortName + ' <small style="color:#888;">(Published: $' + h.publishedRates['Standard'] + ')</small></span>';
+            html += '<input type="number" data-hotel-rate="' + hid + '" min="0" step="0.01" value="' + (state.lnrPerHotelRates[hid] || '') + '" placeholder="e.g., ' + Math.round(h.publishedRates['Standard'] * 0.8) + '.00" style="width:140px;">';
+            html += '</div>';
+          });
+          html += '</div>';
+        } else if (state.lnrRateType === 'percent_off') {
+          html += '<div class="form-group"><label for="lnrDiscountPercent">Discount Percentage Off Best Available Rate *</label>';
+          html += '<div style="display:flex; align-items:center; gap:8px;">';
+          html += '<input type="number" id="lnrDiscountPercent" min="1" max="99" value="' + (state.lnrDiscountPercent || '') + '" placeholder="e.g., 20" style="width:100px;">';
+          html += '<span>% off BAR</span></div>';
+          html += '<small style="color:#666; display:block; margin-top:4px;">Published rates: ';
+          html += state.selectedHotels.map(hid => HOTELS[hid].shortName + ' $' + HOTELS[hid].publishedRates['Standard']).join(', ');
+          html += '</small></div>';
+        }
       }
 
       // Payment responsibility for group
@@ -912,6 +966,17 @@
         html += '</div></div>';
       }
 
+      // Commissionable option for Group
+      if (state.contractType === 'group') {
+        html += '<div class="form-group"><div class="checkbox-item"><input type="checkbox" id="commissionable" ' + (state.commissionable ? 'checked' : '') + ' onchange="document.getElementById(\'commissionPercentGroup\').style.display = this.checked ? \'block\' : \'none\'"><label>Commissionable Rate</label></div>';
+        html += '<small style="color:#666; display:block; margin-top:4px;">Check if a third-party commission applies (e.g., travel agent, event planner).</small></div>';
+        html += '<div id="commissionPercentGroup" class="form-group" style="display: ' + (state.commissionable ? 'block' : 'none') + ';">';
+        html += '<label for="commissionPercent">Commission Percentage *</label>';
+        html += '<div style="display:flex; align-items:center; gap:8px;">';
+        html += '<input type="number" id="commissionPercent" min="1" max="50" value="' + (state.commissionPercent || '') + '" placeholder="e.g., 10" style="width:100px;">';
+        html += '<span>%</span></div></div>';
+      }
+
       // Tax exempt option for Group and LNR
       if (state.contractType === 'group' || state.contractType === 'lnr') {
         html += '<div class="form-group"><div class="checkbox-item"><input type="checkbox" id="taxExempt" ' + (state.taxExempt ? 'checked' : '') + '><label>Tax Exempt (government, schools, etc.)</label></div>';
@@ -960,7 +1025,7 @@
       html += '</div>';
 
       html += '<div class="review-section">';
-      html += '<h3>' + (state.contractType === 'lnr' ? 'Client Information' : 'Group Information') + '</h3>';
+      html += '<h3>' + (state.contractType === 'lnr' ? 'Client Information' : state.contractType === 'trade' ? 'Sponsor Information' : 'Group Information') + '</h3>';
       html += '<div class="review-item"><span class="review-label">Company:</span><span class="review-value">' + state.companyName + '</span></div>';
       html += '<div class="review-item"><span class="review-label">Contact:</span><span class="review-value">' + state.contactName + '</span></div>';
       html += '<div class="review-item"><span class="review-label">Phone:</span><span class="review-value">' + formatPhone(state.contactPhone) + '</span></div>';
@@ -988,9 +1053,17 @@
 
       if (state.seasonStartDate && state.seasonEndDate) {
         html += '<div class="review-section">';
-        html += '<h3>Season</h3>';
+        html += '<h3>Stay Dates</h3>';
         html += '<div class="review-item"><span class="review-label">Dates:</span><span class="review-value">' +
           formatDate(state.seasonStartDate) + ' — ' + formatDate(state.seasonEndDate) + '</span></div>';
+        html += '</div>';
+      }
+
+      if (state.contractType === 'lnr' && state.lnrStartDate && state.lnrEndDate) {
+        html += '<div class="review-section">';
+        html += '<h3>Agreement Period</h3>';
+        html += '<div class="review-item"><span class="review-label">Dates:</span><span class="review-value">' +
+          formatDate(state.lnrStartDate) + ' — ' + formatDate(state.lnrEndDate) + '</span></div>';
         html += '</div>';
       }
 
@@ -1001,10 +1074,34 @@
         html += '</div>';
       }
 
-      if ((state.contractType === 'group' || state.contractType === 'lnr') && state.negotiatedRate) {
+      if (state.contractType === 'group' && state.negotiatedRate) {
         html += '<div class="review-section">';
         html += '<h3>Rate</h3>';
         html += '<div class="review-item"><span class="review-label">Negotiated Rate:</span><span class="review-value">$' + parseFloat(state.negotiatedRate).toFixed(2) + ' per room per night</span></div>';
+        html += '</div>';
+      }
+
+      if (state.contractType === 'lnr') {
+        html += '<div class="review-section">';
+        html += '<h3>Rate</h3>';
+        if (state.lnrRateType === 'flat' && state.negotiatedRate) {
+          html += '<div class="review-item"><span class="review-label">Negotiated Rate:</span><span class="review-value">$' + parseFloat(state.negotiatedRate).toFixed(2) + ' per room per night (all hotels)</span></div>';
+        } else if (state.lnrRateType === 'percent_off' && state.lnrDiscountPercent) {
+          html += '<div class="review-item"><span class="review-label">Rate Type:</span><span class="review-value">' + state.lnrDiscountPercent + '% off Best Available Rate</span></div>';
+          state.selectedHotels.forEach(hid => {
+            const h = HOTELS[hid];
+            const disc = parseFloat(state.lnrDiscountPercent) || 0;
+            const discounted = h.publishedRates['Standard'] * (1 - disc / 100);
+            html += '<div class="review-item"><span class="review-label">' + h.shortName + ':</span><span class="review-value">$' + discounted.toFixed(2) + '/night (published $' + h.publishedRates['Standard'] + ')</span></div>';
+          });
+        } else if (state.lnrRateType === 'per_hotel') {
+          html += '<div class="review-item"><span class="review-label">Rate Type:</span><span class="review-value">Per-Hotel Rates</span></div>';
+          state.selectedHotels.forEach(hid => {
+            const h = HOTELS[hid];
+            const r = parseFloat(state.lnrPerHotelRates[hid]) || 0;
+            html += '<div class="review-item"><span class="review-label">' + h.shortName + ':</span><span class="review-value">' + (r > 0 ? '$' + r.toFixed(2) + '/night' : 'TBD') + ' (published $' + h.publishedRates['Standard'] + ')</span></div>';
+          });
+        }
         html += '</div>';
       }
 
@@ -1018,10 +1115,35 @@
         html += '</div>';
       }
 
+      // Concessions
+      if (state.concessions.length > 0) {
+        html += '<div class="review-section">';
+        html += '<h3>Concessions & Amenities</h3>';
+        html += '<div class="review-item"><span class="review-value">' + state.concessions.join(', ') + '</span></div>';
+        html += '</div>';
+      }
+
+      // Commission (Group)
+      if (state.contractType === 'group' && state.commissionable && state.commissionPercent) {
+        html += '<div class="review-section">';
+        html += '<h3>Commission</h3>';
+        html += '<div class="review-item"><span class="review-label">Commissionable:</span><span class="review-value">Yes — ' + state.commissionPercent + '%</span></div>';
+        html += '</div>';
+      }
+
       if (state.needsBookingLink) {
         html += '<div class="review-section">';
         html += '<h3>Booking Link</h3>';
         html += '<div class="review-item"><span class="review-label">URL:</span><span class="review-value">' + (state.bookingLinkUrl || '[To be provided]') + '</span></div>';
+        html += '</div>';
+      }
+
+      // Hotel Signer
+      const signer = HOTEL_SIGNERS[state.hotelSigner];
+      if (signer) {
+        html += '<div class="review-section">';
+        html += '<h3>Hotel Signer</h3>';
+        html += '<div class="review-item"><span class="review-value">' + signer.name + ', ' + signer.title + '</span></div>';
         html += '</div>';
       }
 
@@ -1146,7 +1268,9 @@
         concessions: [], cancellationDays: 30, sponsorshipValue: 0, hotelSigner: 'mark',
         tradeAllocation: [], negotiatedRate: '', needsBookingLink: false, bookingLinkUrl: '',
         cutoffDate: '', paymentTermOption: '', taxExempt: false, lnrPaymentType: 'individual',
-        lnrTargetNights: '', lnrMaxRoomsPerNight: '', autoFillRooms: '',
+        lnrTargetNights: '', lnrMaxRoomsPerNight: '', lnrRateType: 'flat',
+        lnrPerHotelRates: {}, lnrDiscountPercent: '', lnrStartDate: '', lnrEndDate: '',
+        commissionable: false, commissionPercent: '', autoFillRooms: '',
       };
       Object.assign(state, fresh);
       try { localStorage.removeItem('3923_contract_state'); } catch(e) {}
@@ -1168,6 +1292,15 @@
       text += hotels.map(h => h.shortName + ' (' + h.cancellationHours + ' hours)').join('; ');
       text += '. Failure to cancel within the applicable window will result in a charge equal to one night\'s room and tax.';
       return text;
+    }
+
+    function getTaxRateText() {
+      const hotels = state.selectedHotels.map(id => HOTELS[id]);
+      const cities = [...new Set(hotels.map(h => h.city + ', ' + h.state))];
+      if (cities.length === 1) {
+        return 'The current combined hotel occupancy tax rate in ' + cities[0] + ' is approximately ' + hotels[0].taxRate + '%, which includes state, city, and county occupancy taxes.';
+      }
+      return 'Tax rates vary by property location: ' + hotels.map(h => h.shortName + ' (' + h.city + ', ' + h.state + ' — approximately ' + h.taxRate + '%)').join('; ') + '.';
     }
 
     function generateGroupContract() {
@@ -1197,7 +1330,7 @@
 
       const children = [
         // Title block
-        makeP('GROUP LODGING AGREEMENT — PAID ROOMS', { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
+        makeP('GROUP LODGING AGREEMENT — ' + (state.paymentResponsibility === 'individual' ? 'COURTESY ROOM BLOCK' : 'PAID ROOMS'), { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
         makeP(state.eventName, { bold: true, size: 28, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
         makeP((state.eventDescription ? state.eventDescription + ' | ' : '') + 'Stay Dates: ' + formatDate(state.seasonStartDate) + ' — ' + formatDate(state.seasonEndDate),
           { size: 22, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
@@ -1240,7 +1373,7 @@
         makeHeader('TAXES & FEES'),
         makeBody(state.taxExempt
           ? 'The Group has represented that it is exempt from applicable state, county, and/or local occupancy taxes. The Group must provide a valid tax exemption certificate to the Hotel no later than seven (7) days prior to the Group\'s arrival date. If a valid tax exemption certificate is not received by this deadline, the Hotel reserves the right to charge all applicable occupancy taxes at the prevailing rate. The Group is responsible for verifying that its exemption applies to hotel occupancy taxes in the state of Texas.'
-          : 'All room rates quoted in this Agreement are exclusive of applicable state, county, and local taxes. The current combined hotel occupancy tax rate in Amarillo, TX is approximately 15%, which includes state, city, and county occupancy taxes. Tax rates are subject to change without notice and will be applied at the rate in effect at the time of the stay. The Group is responsible for all applicable taxes unless a valid tax exemption certificate is provided to the Hotel no later than seven (7) days prior to the Group\'s arrival date.'),
+          : 'All room rates quoted in this Agreement are exclusive of applicable state, county, and local taxes. ' + getTaxRateText() + ' Tax rates are subject to change without notice and will be applied at the rate in effect at the time of the stay. The Group is responsible for all applicable taxes unless a valid tax exemption certificate is provided to the Hotel no later than seven (7) days prior to the Group\'s arrival date.'),
 
         // Cancellation
         makeHeader('CANCELLATION'),
@@ -1266,6 +1399,12 @@
       if (state.concessions.length > 0) {
         children.push(makeHeader('CONCESSIONS & AMENITIES'));
         children.push(makeBody('The Hotel agrees to provide the following concessions and amenities to the Group and its guests as part of this Agreement: ' + state.concessions.join(', ') + '. These concessions are provided at no additional charge to the Group and are contingent upon the Group\'s fulfillment of the room block commitment outlined in this Agreement.'));
+      }
+
+      // Commission
+      if (state.commissionable && state.commissionPercent) {
+        children.push(makeHeader('COMMISSION'));
+        children.push(makeBody('The Hotel agrees to pay a commission of ' + state.commissionPercent + '% on the total room revenue (exclusive of taxes and fees) generated from the Group\'s room block to the designated third party. Commission payments will be processed within thirty (30) days following the Group\'s departure date, provided a valid W-9 and commission payment instructions are on file with the Hotel prior to the Group\'s arrival. Commission is payable only on room nights that are actually utilized and paid for in full.'));
       }
 
       // Booking Link
@@ -1314,11 +1453,36 @@
       const rate = parseFloat(state.negotiatedRate) || 0;
       const targetNights = parseInt(state.lnrTargetNights) || 0;
       const maxRooms = parseInt(state.lnrMaxRoomsPerNight) || 0;
+      const discountPct = parseFloat(state.lnrDiscountPercent) || 0;
+
+      // Build rate description for overview paragraph
+      let rateDescription;
+      if (state.lnrRateType === 'percent_off' && discountPct > 0) {
+        rateDescription = discountPct + '% off the Hotel\'s Best Available Rate at the time of booking';
+      } else if (state.lnrRateType === 'per_hotel') {
+        rateDescription = 'a per-property negotiated rate as detailed in the rate schedule below';
+      } else {
+        rateDescription = '$' + rate.toFixed(2) + ' per room per night';
+      }
+
+      // Agreement period text
+      const periodText = state.lnrStartDate && state.lnrEndDate
+        ? ' This Agreement is effective from ' + formatDate(state.lnrStartDate) + ' through ' + formatDate(state.lnrEndDate) + '.'
+        : '';
 
       const children = [
         makeP('LOCAL NEGOTIATED RATE AGREEMENT', { bold: true, size: 32, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
-        makeP(state.companyName, { bold: true, size: 28, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+        makeP(state.companyName, { bold: true, size: 28, alignment: AlignmentType.CENTER, spacing: { after: 100 } }),
+      ];
 
+      if (state.lnrStartDate && state.lnrEndDate) {
+        children.push(makeP('Agreement Period: ' + formatDate(state.lnrStartDate) + ' — ' + formatDate(state.lnrEndDate),
+          { size: 22, alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
+      } else {
+        children.push(makeP('', { spacing: { after: 300 } }));
+      }
+
+      children.push(
         makeHeader('AGREEMENT PARTIES & CONTACT INFORMATION'),
         createPartyTable(state.companyName, state.contactName, state.contactTitle, state.contactAddress, state.contactCity,
           state.contactState, state.contactZip, state.contactPhone, state.contactEmail,
@@ -1328,9 +1492,9 @@
         makeBody('This Local Negotiated Rate Agreement ("Agreement") is entered into between ' + state.companyName + ' ("Company"), represented by ' + state.contactName +
           (state.contactTitle ? ', ' + state.contactTitle : '') +
           ', and ' + hotelEntity + ', doing business as ' + hotelDba +
-          ', managed by Thirty-Nine 23 Management, LLC ("Hotel"). The purpose of this Agreement is to establish a preferred negotiated room rate for the Company\'s employees, contractors, and authorized guests who require lodging at the Hotel\'s participating properties on an ongoing basis.'),
-        makeBody('Under the terms of this Agreement, the Hotel agrees to offer a negotiated room rate of $' + rate.toFixed(2) +
-          ' per room per night (exclusive of applicable taxes and fees) to all eligible guests who identify themselves as traveling on behalf of ' + state.companyName +
+          ', managed by Thirty-Nine 23 Management, LLC ("Hotel"). The purpose of this Agreement is to establish a preferred negotiated room rate for the Company\'s employees, contractors, and authorized guests who require lodging at the Hotel\'s participating properties on an ongoing basis.' + periodText),
+        makeBody('Under the terms of this Agreement, the Hotel agrees to offer ' + rateDescription +
+          ' (exclusive of applicable taxes and fees) to all eligible guests who identify themselves as traveling on behalf of ' + state.companyName +
           ' at the time of reservation. This rate is available on a space-available basis and is not guaranteed during blackout dates, citywide events, or periods of high demand. The Company targets a total of ' +
           (targetNights > 0 ? targetNights.toLocaleString() : '[TBD]') +
           ' room nights annually across the participating properties.' +
@@ -1356,7 +1520,7 @@
         makeHeader('TAXES & FEES'),
         makeBody(state.taxExempt
           ? state.companyName + ' has represented that it is exempt from applicable state, county, and/or local occupancy taxes. The Company must provide a valid tax exemption certificate to the Hotel prior to the first reservation under this Agreement. If a valid tax exemption certificate is not on file, the Hotel reserves the right to charge all applicable occupancy taxes at the prevailing rate. The Company is responsible for verifying that its exemption applies to hotel occupancy taxes in the state of Texas.'
-          : 'All rates quoted in this Agreement are exclusive of applicable state, county, and local taxes. The current combined hotel occupancy tax rate in Amarillo, TX is approximately 15%, which includes state, city, and county occupancy taxes. Tax rates are subject to change without notice and will be applied at the rate in effect at the time of the stay.'),
+          : 'All rates quoted in this Agreement are exclusive of applicable state, county, and local taxes. ' + getTaxRateText() + ' Tax rates are subject to change without notice and will be applied at the rate in effect at the time of the stay.'),
 
         makeHeader('CANCELLATION'),
         makeBody(getCancellationText()),
@@ -1413,7 +1577,10 @@
     function generateTradeContract() {
       const { Document, Packer, AlignmentType } = docx;
       const signer = HOTEL_SIGNERS[state.hotelSigner];
-      const hotelDba = state.selectedHotels.map(id => HOTELS[id].dba).join(', ');
+      const isSingleHotel = state.selectedHotels.length === 1;
+      const hotel = isSingleHotel ? HOTELS[state.selectedHotels[0]] : null;
+      const tradeEntity = isSingleHotel ? hotel.entity : MGMT_ENTITY;
+      const hotelDba = isSingleHotel ? hotel.dba : state.selectedHotels.map(id => HOTELS[id].dba).join(', ');
       const totalNights = state.tradeAllocation.reduce((sum, a) => sum + (a.nights || 0), 0);
 
       const children = [
@@ -1425,27 +1592,27 @@
         makeHeader('AGREEMENT PARTIES & CONTACT INFORMATION'),
         createPartyTable(state.companyName, state.contactName, state.contactTitle, state.contactAddress, state.contactCity,
           state.contactState, state.contactZip, state.contactPhone, state.contactEmail,
-          MGMT_ENTITY, hotelDba, signer, false, 'SPONSOR'),
+          tradeEntity, hotelDba, signer, isSingleHotel, 'SPONSOR'),
 
         makeHeader('AGREEMENT OVERVIEW'),
-        makeBody('This In-Kind Sponsorship Lodging Agreement ("Agreement") is entered into between ' + MGMT_ENTITY + ' ("Owner"), managing the properties listed herein, and ' + state.companyName + ' ("Group"), represented by ' + state.contactName +
-          (state.contactTitle ? ', ' + state.contactTitle : '') + '. The purpose of this Agreement is to establish the terms and conditions under which the Owner will provide complimentary lodging accommodations to the Group on an in-kind trade basis.'),
-        makeBody('In consideration of the Group\'s sponsorship package — valued at $' + state.sponsorshipValue.toFixed(2) +
-          ' — the Owner agrees to provide a total of ' + totalNights + ' complimentary room nights across the participating properties listed below. No cash payment is required from the Group for these room nights. This trade arrangement is subject to the terms and conditions outlined in this Agreement.'),
+        makeBody('This In-Kind Sponsorship Lodging Agreement ("Agreement") is entered into between ' + tradeEntity + ' ("Owner"), managing the properties listed herein, and ' + state.companyName + ' ("Sponsor"), represented by ' + state.contactName +
+          (state.contactTitle ? ', ' + state.contactTitle : '') + '. The purpose of this Agreement is to establish the terms and conditions under which the Owner will provide complimentary lodging accommodations to the Sponsor on an in-kind trade basis.'),
+        makeBody('In consideration of the Sponsor\'s sponsorship package — valued at $' + state.sponsorshipValue.toFixed(2) +
+          ' — the Owner agrees to provide a total of ' + totalNights + ' complimentary room nights across the participating properties listed below. No cash payment is required from the Sponsor for these room nights. This trade arrangement is subject to the terms and conditions outlined in this Agreement.'),
 
         makeHeader('ELIGIBLE PROPERTIES'),
         makeBody('The following properties are participating in this in-kind trade arrangement. All room nights must be utilized at one of the properties listed below.'),
         createEligiblePropertiesTable(state.selectedHotels),
 
         makeHeader('ROOM NIGHT ALLOCATION'),
-        makeBody('The following room night allocation has been agreed upon by the Owner and the Group. The allocation specifies the guest, assigned property, number of room nights, and approximate dates of stay. Changes to this allocation may be made with the Owner\'s prior written approval.'),
+        makeBody('The following room night allocation has been agreed upon by the Owner and the Sponsor. The allocation specifies the guest, assigned property, number of room nights, and approximate dates of stay. Changes to this allocation may be made with the Owner\'s prior written approval.'),
         createTradeAllocationTable(state.tradeAllocation),
 
         makeHeader('GUEST IDENTIFICATION'),
-        makeBody('The Group shall provide the Owner with the full legal names of all guests who will occupy trade rooms no later than seven (7) calendar days prior to each guest\'s scheduled check-in date. Rooms cannot be held or confirmed without guest identification. The Owner reserves the right to deny accommodation to any guest not identified in advance.'),
+        makeBody('The Sponsor shall provide the Owner with the full legal names of all guests who will occupy trade rooms no later than seven (7) calendar days prior to each guest\'s scheduled check-in date. Rooms cannot be held or confirmed without guest identification. The Owner reserves the right to deny accommodation to any guest not identified in advance.'),
 
         makeHeader('SPONSORSHIP BENEFITS'),
-        makeBody('In consideration of the complimentary room nights provided by the Owner, the Group agrees to deliver sponsorship benefits valued at $' + state.sponsorshipValue.toFixed(2) + ' to the Owner in connection with the ' + state.eventName + '. The specific sponsorship benefits to be provided by the Group are detailed in Addendum A, which is attached hereto and incorporated by reference into this Agreement. Both parties must execute Addendum A prior to or concurrent with the execution of this Agreement.'),
+        makeBody('In consideration of the complimentary room nights provided by the Owner, the Sponsor agrees to deliver sponsorship benefits valued at $' + state.sponsorshipValue.toFixed(2) + ' to the Owner in connection with the ' + state.eventName + '. The specific sponsorship benefits to be provided by the Sponsor are detailed in Addendum A, which is attached hereto and incorporated by reference into this Agreement. Both parties must execute Addendum A prior to or concurrent with the execution of this Agreement.'),
 
         makeHeader('INCIDENTALS'),
         makeBody('Incidental charges — including but not limited to room service, minibar purchases, telephone calls, parking, laundry services, and any other ancillary charges — are the sole responsibility of each individual guest and must be settled at the time of checkout. The in-kind trade covers room and applicable tax only.'),
@@ -1455,14 +1622,14 @@
         makeBody('Unused room nights are not transferable and may not be carried over beyond the stay dates specified in this Agreement unless otherwise agreed upon in writing by both parties.'),
 
         makeHeader('CHECK-IN / CHECK-OUT'),
-        makeBody('Standard check-in time is 3:00 PM and standard check-out time is 11:00 AM. Early arrivals will be accommodated on a space-available basis and cannot be guaranteed. Late check-out requests are subject to availability and may incur additional charges.'),
+        makeBody('Standard check-in time is ' + (hotel ? hotel.checkin : '3:00 PM') + ' and standard check-out time is ' + (hotel ? hotel.checkout : '11:00 AM') + '. Early arrivals will be accommodated on a space-available basis and cannot be guaranteed. Late check-out requests are subject to availability and may incur additional charges.'),
 
         makeHeader('ENTIRE AGREEMENT'),
         makeBody('This Agreement, together with any addenda (including Addendum A — Sponsorship Benefits), exhibits, or amendments attached hereto, constitutes the entire agreement between the parties with respect to the subject matter herein. No prior oral or written agreements, representations, or understandings shall be binding upon either party except as expressly set forth in this Agreement. This Agreement may not be modified, amended, or supplemented except by a written instrument signed by both parties. This Agreement shall become binding upon full execution by both parties below.'),
         makeBody('The undersigned represent and warrant that they are duly authorized to execute this Agreement on behalf of their respective organizations and that the execution of this Agreement has been duly approved by all necessary corporate or organizational action.'),
 
         makeHeader('ACCEPTED AND AGREED TO'),
-        createSignatureTable(state.companyName, MGMT_ENTITY, hotelDba, signer, 'SPONSOR'),
+        createSignatureTable(state.companyName, tradeEntity, hotelDba, signer, 'SPONSOR'),
       ];
 
       const doc = new Document({
@@ -1590,25 +1757,51 @@
 
     function createRateTableLNR(hotelIds, negotiatedRate) {
       const { Table, TableRow, WidthType } = docx;
+      const discountPct = parseFloat(state.lnrDiscountPercent) || 0;
 
-      const rows = [
-        new TableRow({
-          children: [
-            createTableCell('PROPERTY', true),
-            createTableCell('NEGOTIATED RATE', true),
-          ]
-        })
-      ];
+      const headerCells = [createTableCell('PROPERTY', true), createTableCell('PUBLISHED RATE', true), createTableCell('NEGOTIATED RATE', true)];
+      if (state.lnrRateType === 'percent_off') {
+        headerCells.splice(2, 0, createTableCell('DISCOUNT', true));
+      }
+
+      const rows = [new TableRow({ children: headerCells })];
 
       hotelIds.forEach(hotelId => {
         const hotel = HOTELS[hotelId];
-        const displayRate = negotiatedRate ? '$' + negotiatedRate.toFixed(2) + ' per room per night' : 'Rate to be determined';
-        rows.push(new TableRow({
-          children: [
-            createTableCell(hotel.dba, false),
-            createTableCell(displayRate, false),
-          ]
-        }));
+        const published = hotel.publishedRates['Standard'];
+        let displayRate;
+
+        if (state.lnrRateType === 'percent_off' && discountPct > 0) {
+          const discounted = published * (1 - discountPct / 100);
+          displayRate = '$' + discounted.toFixed(2) + ' per night';
+          rows.push(new TableRow({
+            children: [
+              createTableCell(hotel.dba, false),
+              createTableCell('$' + published.toFixed(2), false),
+              createTableCell(discountPct + '% off BAR', false),
+              createTableCell(displayRate, false),
+            ]
+          }));
+        } else if (state.lnrRateType === 'per_hotel') {
+          const perHotelRate = parseFloat(state.lnrPerHotelRates[hotelId]) || 0;
+          displayRate = perHotelRate > 0 ? '$' + perHotelRate.toFixed(2) + ' per night' : 'Rate to be determined';
+          rows.push(new TableRow({
+            children: [
+              createTableCell(hotel.dba, false),
+              createTableCell('$' + published.toFixed(2), false),
+              createTableCell(displayRate, false),
+            ]
+          }));
+        } else {
+          displayRate = negotiatedRate ? '$' + negotiatedRate.toFixed(2) + ' per night' : 'Rate to be determined';
+          rows.push(new TableRow({
+            children: [
+              createTableCell(hotel.dba, false),
+              createTableCell('$' + published.toFixed(2), false),
+              createTableCell(displayRate, false),
+            ]
+          }));
+        }
       });
 
       return new Table({
@@ -1714,7 +1907,7 @@
           children: [
             createTableCell(hotel.dba, false),
             createTableCell(hotel.address + ', ' + hotel.city + ' ' + hotel.state + ' ' + hotel.zip, false),
-            createTableCell(hotel.phone, false),
+            createTableCell(formatPhone(hotel.phone), false),
           ]
         }));
       });
